@@ -2,7 +2,6 @@
 
 TcpService::TcpService(/* args */)
 {
-    maximumSizeOfScanList = 10;
 }
 
 void TcpService::wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
@@ -69,7 +68,8 @@ void TcpService::InitTcpService(WiFiMode mode)
             .max_connection = (uint8_t)5,
             .beacon_interval = 100,
             .pairwise_cipher = WIFI_CIPHER_TYPE_NONE,
-        };
+            .ftm_responder = 1
+            };
 
         // if (strlen(EXAMPLE_ESP_WIFI_PASS) == 0)
         // {
