@@ -33,10 +33,10 @@ void logDword(const char *TAG, uint32_t logNumber)
     logString(TAG, charNumber);
 }
 
-void logFloat(const char *TAG, float logFloating)
+void logFloat(const char *TAG, double logFloating)
 {
     char charFloating[KB];
-    sprintf(charFloating, "%.2f", logFloating);
+    sprintf(charFloating, "%lf", logFloating);
     logString(TAG, (char *)charFloating);
 }
 
@@ -49,7 +49,7 @@ void initObjects()
     Gpio->InitBlink();
 
     Tcp = new TcpService();
-    Tcp->InitTcpService();
+    Tcp->InitTcpService(WiFiMode::Ap);
     Tcp->logString = logString;
     Tcp->logDword = logDword;
     Tcp->logFloat = logFloat;
@@ -59,6 +59,5 @@ extern "C" int app_main(void)
 {
     logString(MAIN_TAG, "Go Proyect!");
     initObjects();
-    Tcp->ScanWifiNetworks();
     return 0;
 }

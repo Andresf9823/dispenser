@@ -26,7 +26,7 @@ public:
     void InitBlink();
     void (*logString)(const char *TAG, const char *message);
     void (*logDword)(const char *TAG, uint32_t logNumber);
-    void (*logFloat)(const char *TAG, float logFloating);
+    void (*logFloat)(const char *TAG, double logFloating);
     ~InputsOutputs();
 };
 

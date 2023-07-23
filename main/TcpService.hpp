@@ -14,19 +14,29 @@
 #include <nvs_flash.h>
 #include <esp_wifi.h>
 
+#define MAXIMUM_SIZE_OF_SCAN_LIST 10
+
+typedef enum WiFiMode
+{
+    ApStation,
+    Station,
+    Ap
+} _WifiMode;
+
 class TcpService
 {
 private:
     const char *tag = "Tcp";
-    uint16_t maximumSizeOfScanList;
+    static void ScanWifiNetworks();
+    static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
 public:
     TcpService();
-    void InitTcpService();
-    void ScanWifiNetworks();
+    void InitTcpService(WiFiMode mode);
+
     void (*logString)(const char *TAG, const char *message);
     void (*logDword)(const char *TAG, uint32_t logNumber);
-    void (*logFloat)(const char *TAG, float logFloating);
+    void (*logFloat)(const char *TAG, double logFloating);
     ~TcpService();
 };
 #endif
