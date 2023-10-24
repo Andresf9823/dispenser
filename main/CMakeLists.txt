@@ -4,10 +4,9 @@
 idf_component_register(
     SRCS 
     UartsFunctions.cpp
+    Formatter.cpp
     TcpService.cpp 
-    JsonFormatter.cpp
-    InputsOutputs.cpp
-    TaskManager.cpp     
+    InputsOutputs.cpp  
     main.cpp       		 # list the source files of this component
     INCLUDE_DIRS .       # optional, add here public include directories
     PRIV_INCLUDE_DIRS    # optional, add here private include directories

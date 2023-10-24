@@ -7,9 +7,8 @@
 #include <freertos/task.h>
 #include <freertos/timers.h>
 #include <esp_log.h>
-#include <JsonFormatter.hpp>
+#include <Formatter.hpp>
 #include <InputsOutputs.hpp>
-#include <TaskManager.hpp>
 #include <TcpService.hpp>
 #include <UartsFunctions.hpp>
 
@@ -21,9 +20,8 @@ using namespace std;
 
 static const char *tag = "Main";
 
-TaskManager *Task;
 Uarts *Uart;
-JsonFormatter *Json;
+Formatter *Format;
 InputsOutputs *Gpio;
 TcpService *Tcp;
 
@@ -43,23 +41,7 @@ void logFloat(const char *TAG, double logFloating)
 {
 	char charFloating[KB];
 	sprintf(charFloating, "%f.2", logFloating);
-	logString(TAG, (char*) charFloating);
-}
-
-void CheckSomethingInUarts()
-{
-	if (uart0Buffer != NULL) {
-		logString(tag, "This incoming from uart0: ");
-		logString(tag, (const char*) uart0Buffer);
-	}
-	if (uart1Buffer != NULL) {
-		logString(tag, "This incoming from uart1: ");
-		logString(tag, (const char*) uart1Buffer);
-	}
-	if (uart2Buffer != NULL) {
-		logString(tag, "This incoming from uart2: ");
-		logString(tag, (const char*) uart2Buffer);
-	}
+	logString(TAG, (char *)charFloating);
 }
 
 void initObjects()
@@ -70,15 +52,10 @@ void initObjects()
 	Uart->logFloat = logFloat;
 	Uart->UartInitializer(2);
 
-	Json = new JsonFormatter();
-	Json->logString = logString;
-	Json->logDword = logDword;
-	Json->logFloat = logFloat;
-
-	Task = new TaskManager();
-	Task->logString = logString;
-	Task->logDword = logDword;
-	Task->logFloat = logFloat;
+	Format = new Formatter();
+	Format->logString = logString;
+	Format->logDword = logDword;
+	Format->logFloat = logFloat;
 
 	Gpio = new InputsOutputs();
 	Gpio->logString = logString;
@@ -97,8 +74,5 @@ extern "C" int app_main(void)
 {
 	logString(tag, "Go project!");
 	initObjects();
-	while (1) {
-		CheckSomethingInUarts();
-	}
 	return 0;
 }

@@ -13,6 +13,7 @@
 #include <esp_event.h>
 #include <nvs_flash.h>
 #include <esp_wifi.h>
+
 #define MAXIMUM_SIZE_OF_SCAN_LIST 10
 
 typedef enum WiFiMode {
@@ -33,7 +34,7 @@ class TcpService {
 	public:
 		TcpService();
 		void InitWifiService(WiFiMode mode);
-		void ScanWifiNetworks(wifi_ap_record_t* apRecordsScanned);
+		uint16_t ScanWifiNetworks(wifi_ap_record_t *apRecords);
 		void (*logString)(const char *TAG, const char *message);
 		void (*logDword)(const char *TAG, uint32_t logNumber);
 		void (*logFloat)(const char *TAG, double logFloating);

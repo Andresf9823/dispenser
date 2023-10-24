@@ -1,0 +1,6 @@
+{
+    "idf.adapterTargetName": "esp32",
+    "idf.portWin": "COM22",
+    "idf.flashType": "UART",
+    "C_Cpp.errorSquiggles": "disabled"
+}
