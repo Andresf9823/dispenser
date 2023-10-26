@@ -1,7 +1,7 @@
 {
     "version":            "1",
     "project_name":       "app-template",
-    "project_version":    "ad50b06-dirty",
+    "project_version":    "a2cfab5-dirty",
     "project_path":       "C:/Users/aberdugo.CONSWARE/Music/webDispenser",
     "idf_path":           "C:/Users/aberdugo.CONSWARE/esp/esp-idf",
     "build_dir":          "C:/Users/aberdugo.CONSWARE/Music/webDispenser/build",

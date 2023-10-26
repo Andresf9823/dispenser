@@ -44,6 +44,20 @@ void logFloat(const char *TAG, double logFloating)
 	logString(TAG, (char *)charFloating);
 }
 
+void SendWifiApRecordsScanned()
+{
+	ApRecordList apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
+	uint16_t recordsScanned = Tcp->ScanWifiNetworks(apRecords);
+	// for (uint8_t i = 0; i < recordsScanned; i++)
+	// {
+	// 	logString(tag, apRecords[i].mac);
+	// 	logString(tag, apRecords[i].ssid);
+	// 	logDword(tag, apRecords[i].authMode);
+	// 	logDword(tag, apRecords[i].rssi);
+	// }
+	Format->apRecordsListToJson(apRecords, recordsScanned);
+}
+
 void initObjects()
 {
 	Uart = new Uarts();
@@ -74,5 +88,6 @@ extern "C" int app_main(void)
 {
 	logString(tag, "Go project!");
 	initObjects();
+	SendWifiApRecordsScanned();
 	return 0;
 }

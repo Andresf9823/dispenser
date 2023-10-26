@@ -3,7 +3,9 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "C:/Users/aberdugo.CONSWARE/esp/esp-idf",
+                "C:/Users/aberdugo.CONSWARE/Music/webDispenser"
             ],
             "defines": [
                 "_DEBUG",

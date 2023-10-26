@@ -198,34 +198,47 @@ void TcpService::InitWifiService(WiFiMode mode)
 	ESP_ERROR_CHECK(esp_wifi_start());
 
 	/*Interfaces WiFi task start now*/
-	if (mode != WiFiMode::Ap)
-	{
-		wifi_ap_record_t apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
-		uint16_t recordsScanned = ScanWifiNetworks(apRecords);
-		for (uint8_t i = 0; i < recordsScanned; i++)
-		{
-			this->logString(this->tag, (const char *)apRecords[i].ssid);
-			char mac[18];
-			sprintf(mac, "%02X:%02X:%02X:%02X:%02X:%02X",
-					apRecords[i].bssid[0], apRecords[i].bssid[1],
-					apRecords[i].bssid[2], apRecords[i].bssid[3],
-					apRecords[i].bssid[4], apRecords[i].bssid[5]);
-			this->logString(tag, (const char *)mac);
-			this->logDword(this->tag, apRecords[i].rssi);
-			this->logDword(this->tag, apRecords[i].authmode);
-		}
-	}
+	// if (mode != WiFiMode::Ap)
+	// {
+	// 	wifi_ap_record_t apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
+	// 	uint16_t recordsScanned = ScanWifiNetworks(apRecords);
+	// 	for (uint8_t i = 0; i < recordsScanned; i++)
+	// 	{
+	// 		this->logString(this->tag, (const char *)apRecords[i].ssid);
+	// 		char mac[18];
+	// 		sprintf(mac, "%02X:%02X:%02X:%02X:%02X:%02X",
+	// 				apRecords[i].bssid[0], apRecords[i].bssid[1],
+	// 				apRecords[i].bssid[2], apRecords[i].bssid[3],
+	// 				apRecords[i].bssid[4], apRecords[i].bssid[5]);
+	// 		this->logString(tag, (const char *)mac);
+	// 		this->logDword(this->tag, apRecords[i].rssi);
+	// 		this->logDword(this->tag, apRecords[i].authmode);
+	// 	}
+	// }
 }
 
-uint16_t TcpService::ScanWifiNetworks(wifi_ap_record_t *apRecords)
+uint16_t TcpService::ScanWifiNetworks(ApRecordList *apRecords)
 {
+	
+    this->logString(this->tag, "Start WiFi networks scanning");
 	uint16_t numberOfApScanned = 0;
+	wifi_ap_record_t apRecordsScanned[MAXIMUM_SIZE_OF_SCAN_LIST];
 	uint16_t maximumSizeOfScanList = MAXIMUM_SIZE_OF_SCAN_LIST;
-	memset(apRecords, 0, maximumSizeOfScanList);
-
+	memset(apRecords, 0, MAXIMUM_SIZE_OF_SCAN_LIST);
 	esp_wifi_scan_start(NULL, true);
-	ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&maximumSizeOfScanList, apRecords));
+	ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&maximumSizeOfScanList, apRecordsScanned));
 	ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&numberOfApScanned));
 	numberOfApScanned = numberOfApScanned > MAXIMUM_SIZE_OF_SCAN_LIST ? MAXIMUM_SIZE_OF_SCAN_LIST : numberOfApScanned;
+	for (uint8_t i = 0; i < numberOfApScanned; i++)
+	{
+		sprintf(apRecords[i].mac, "%02X:%02X:%02X:%02X:%02X:%02X",
+				apRecordsScanned[i].bssid[0], apRecordsScanned[i].bssid[1],
+				apRecordsScanned[i].bssid[2], apRecordsScanned[i].bssid[3],
+				apRecordsScanned[i].bssid[4], apRecordsScanned[i].bssid[5]);
+		memcpy(apRecords[i].ssid, apRecordsScanned[i].ssid, 33);
+		apRecords[i].rssi = apRecordsScanned[i].rssi;
+		apRecords[i].authMode = apRecordsScanned[i].authmode;
+	}
+
 	return numberOfApScanned;
 }
