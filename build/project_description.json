@@ -1,7 +1,7 @@
 {
     "version":            "1",
     "project_name":       "app-template",
-    "project_version":    "a2cfab5-dirty",
+    "project_version":    "650386a-dirty",
     "project_path":       "C:/Users/aberdugo.CONSWARE/Music/webDispenser",
     "idf_path":           "C:/Users/aberdugo.CONSWARE/esp/esp-idf",
     "build_dir":          "C:/Users/aberdugo.CONSWARE/Music/webDispenser/build",
@@ -790,7 +790,7 @@
             "managed_reqs": [],
             "managed_priv_reqs": [],
             "file": "C:/Users/aberdugo.CONSWARE/Music/webDispenser/build/esp-idf/main/libmain.a",
-            "sources": [ "C:/Users/aberdugo.CONSWARE/Music/webDispenser/main/UartsFunctions.cpp", "C:/Users/aberdugo.CONSWARE/Music/webDispenser/main/Formatter.cpp", "C:/Users/aberdugo.CONSWARE/Music/webDispenser/main/TcpService.cpp", "C:/Users/aberdugo.CONSWARE/Music/webDispenser/main/InputsOutputs.cpp", "C:/Users/aberdugo.CONSWARE/Music/webDispenser/main/main.cpp" ],
+            "sources": [ "C:/Users/aberdugo.CONSWARE/Music/webDispenser/main/UartsFunctions.cpp", "C:/Users/aberdugo.CONSWARE/Music/webDispenser/main/Formatter.cpp", "C:/Users/aberdugo.CONSWARE/Music/webDispenser/main/WiFiService.cpp", "C:/Users/aberdugo.CONSWARE/Music/webDispenser/main/TcpService.cpp", "C:/Users/aberdugo.CONSWARE/Music/webDispenser/main/InputsOutputs.cpp", "C:/Users/aberdugo.CONSWARE/Music/webDispenser/main/main.cpp" ],
             "include_dirs": [ "." ]
         },
         "mbedtls": {

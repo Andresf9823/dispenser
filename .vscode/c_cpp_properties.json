@@ -5,7 +5,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "C:/Users/aberdugo.CONSWARE/esp/esp-idf",
-                "C:/Users/aberdugo.CONSWARE/Music/webDispenser"
+                "C:/Users/aberdugo.CONSWARE/Music/webDispenser",
+                "C:/Users/aberdugo.CONSWARE/esp/esp-idf/components"
             ],
             "defines": [
                 "_DEBUG",
@@ -16,7 +17,8 @@
             "compilerPath": "cl.exe",
             "cStandard": "c17",
             "cppStandard": "c++17",
-            "intelliSenseMode": "windows-msvc-x64"
+            "intelliSenseMode": "windows-msvc-x64",
+            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
         }
     ],
     "version": 4

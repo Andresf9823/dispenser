@@ -2,28 +2,24 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include <esp_task_wdt.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <freertos/timers.h>
 #include <esp_log.h>
 #include <Formatter.hpp>
 #include <InputsOutputs.hpp>
-#include <TcpService.hpp>
+#include <WiFiService.hpp>
 #include <UartsFunctions.hpp>
-
-using namespace std;
 
 /*Memory size*/
 #define KB (1024UL)
 #define MB (KB)(KB)
+
+using namespace std;
 
 static const char *tag = "Main";
 
 Uarts *Uart;
 Formatter *Format;
 InputsOutputs *Gpio;
-TcpService *Tcp;
+WifiService *Wifi;
 
 void logString(const char *TAG, const char *message)
 {
@@ -47,8 +43,7 @@ void logFloat(const char *TAG, double logFloating)
 void SendWifiApRecordsScanned()
 {
 	ApRecordList apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
-	uint16_t recordsScanned = Tcp->ScanWifiNetworks(apRecords);
-	// for (uint8_t i = 0; i < recordsScanned; i++)
+	uint16_t recordsScanned = Wifi->ScanWifiNetworks(apRecords);
 	// {
 	// 	logString(tag, apRecords[i].mac);
 	// 	logString(tag, apRecords[i].ssid);
@@ -77,17 +72,17 @@ void initObjects()
 	Gpio->logFloat = logFloat;
 	Gpio->InitBlink();
 
-	Tcp = new TcpService();
-	Tcp->logString = logString;
-	Tcp->logDword = logDword;
-	Tcp->logFloat = logFloat;
-	Tcp->InitWifiService(WiFiMode::ApStation);
+	Wifi = new WifiService();
+	Wifi->logString = logString;
+	Wifi->logDword = logDword;
+	Wifi->logFloat = logFloat;
+	Wifi->InitWifiService(WiFiMode::ApStation);
 }
 
 extern "C" int app_main(void)
 {
 	logString(tag, "Go project!");
 	initObjects();
-	SendWifiApRecordsScanned();
+	// SendWifiApRecordsScanned();
 	return 0;
 }

@@ -5,7 +5,8 @@ idf_component_register(
     SRCS 
     UartsFunctions.cpp
     Formatter.cpp
-    TcpService.cpp 
+    WiFiService.cpp 
+    TcpService.cpp
     InputsOutputs.cpp  
     main.cpp       		 # list the source files of this component
     INCLUDE_DIRS .       # optional, add here public include directories

@@ -14,6 +14,9 @@
         "streambuf": "cpp",
         "system_error": "cpp",
         "xlocbuf": "cpp",
-        "xstring": "cpp"
+        "xstring": "cpp",
+        "xlocinfo": "cpp",
+        "complex": "c",
+        "format": "c"
     }
 }
