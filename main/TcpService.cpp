@@ -4,43 +4,92 @@ TcpService::TcpService(/* args */)
 {
 }
 
-void TcpService::do_retransmit(const int sock, bool isConnected)
+void TcpService::TcpAppStack(uint8_t *buffer)
 {
-    int len = 1;
-    uint8_t rx_buffer[512];
+    if (strlen((char *)buffer) > 0)
+    {
+        switch (uint(buffer[3]))
+        {
+        case ProtocolCommand::sendWifiApRecords: // 7B 00 7C 1B 7C 7D
+            SendWifiApRecordsScanned();
+            break;
+        default:
+            break;
+        }
+    }
+}
 
-    while (len > 0)
+void TcpService::do_retransmit(const int sock)
+{
+    int len;
+    uint8_t rx_buffer[RX_BUFFER_SIZE];
+
+    do
     {
         len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
+
         if (len < 0)
         {
-            ESP_LOGE("TCP TRANSMIT", "Error occurred during receiving: errno %d", errno);
+            ESP_LOGE("TCP retransmit", "Error occurred during receiving: errno %d", errno);
         }
         else if (len == 0)
         {
-            ESP_LOGW("TCP TRANSMIT", "Connection closed");
+            ESP_LOGW("TCP retransmit", "Connection closed");
         }
         else
         {
             rx_buffer[len] = 0; // Null-terminate whatever is received and treat it like a string
-            ESP_LOGI("TCP TRANSMIT", "Received %d bytes: %s", len, rx_buffer);
+
+            char data[sizeof(rx_buffer) * sizeof(char)];
+            memset(data, 0, sizeof(data));
+
+            uint k = 0;
+            for (uint i = 0; i < len; i++)
+            {
+                k += sprintf(data + k, "%02X ", rx_buffer[i]);
+            }
+
+            ESP_LOGI("TCP retransmit", "Received %d bytes: %s", len, (const char *)data);
+
+            if (isValidFrame(rx_buffer))
+            {
+                memset(tcpBuffer, 0, sizeof(tcpBuffer));
+                memcpy(tcpBuffer, rx_buffer, len);
+
+                TcpAppStack(rx_buffer);
+            }
 
             // send() can return less bytes than supplied length.
             // Walk-around for robust implementation.
-            int to_write = len;
-            while (to_write > 0)
-            {
-                int written = send(sock, rx_buffer + (len - to_write), to_write, 0);
-                if (written < 0)
-                {
-                    ESP_LOGE("TCP TRANSMIT", "Error occurred during sending: errno %d", errno);
-                    // Failed to retransmit, giving up
-                    return;
-                }
-                to_write -= written;
-            }
+            // int to_write = len;
+            // while (to_write > 0)
+            // {
+            //     int written = send(sock, rx_buffer + (len - to_write), to_write, 0);
+            //     if (written < 0)
+            //     {
+            //         ESP_LOGE("TCP retransmit", "Error occurred during sending: errno %d", errno);
+            //         // Failed to retransmit, giving up
+            //         return;
+            //     }
+            //     to_write -= written;
+            // }
         }
+    } while (len > 0);
+}
+
+bool TcpService::isValidFrame(uint8_t *buffer)
+{
+    bool begin, finish = false;
+    for (uint i = 0; i < sizeof(buffer); i++)
+    {
+        if (buffer[i] == '{')
+            begin = true;
+        if (buffer[i] == '}')
+            finish = true;
+        if (begin && finish)
+            return true;
     }
+    return false;
 }
 
 void TcpService::serverTask(void *pvParameters)
@@ -84,46 +133,38 @@ void TcpService::serverTask(void *pvParameters)
     }
 
     setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    int sock = 0;
-    bool isConnected = false;
     char addr_str[128];
 
     while (listening)
     {
-        if (!isConnected)
-        {
-            struct sockaddr_storage source_addr; // Large enough for both IPv4 or IPv6
-            socklen_t addr_len = sizeof(source_addr);
-            ESP_LOGE("TCP SERVER TASK", "Waiting accept connections");
-            sock = accept(listenSocket, (struct sockaddr *)&source_addr, &addr_len);
-            ESP_LOGE("TCP SERVER TASK", "SOCKET: %d", sock);
+        ESP_LOGI("TCP SERVER", "Socket listening");
 
-            if (source_addr.ss_family == PF_INET)
-            {
-                memset(addr_str, 0, 128);
-                inet_ntoa_r(((struct sockaddr_in *)&source_addr)->sin_addr, addr_str, sizeof(addr_str) - 1);
-                ESP_LOGE("TCP SERVER TASK", "Socket accepted ip address: %s", addr_str);
-            }
-            isConnected = true;
-        }
-        else
-        {
-            struct sockaddr_storage source_addr; // Large enough for both IPv4 or IPv6
-            socklen_t addr_len = sizeof(source_addr);
-            sock = getpeername(listenSocket, (struct sockaddr *)&source_addr, &addr_len);
-            memset(addr_str, 0, 128);
-            inet_ntoa_r(((struct sockaddr_in *)&source_addr)->sin_addr, addr_str, sizeof(addr_str) - 1);
-            ESP_LOGE("TCP SERVER TASK", "IP: %s", addr_str);
-        }
-        do_retransmit(sock, isConnected);
+        struct sockaddr_storage source_addr; // Large enough for both IPv4 or IPv6
+        socklen_t addr_len = sizeof(source_addr);
+        int sock = accept(listenSocket, (struct sockaddr *)&source_addr, &addr_len);
         if (sock < 0)
         {
-            ESP_LOGE("TCP SERVER TASK", "Unable to accept connection: errno %d", errno);
-            isConnected = false;
-            shutdown(sock, 0);
-            close(sock);
-            ESP_LOGE("TCP SERVER TASK", " errno %d", errno);
+            ESP_LOGE("TCP SERVER", "Unable to accept connection: errno %d", errno);
+            break;
         }
+
+        // Set tcp keepalive option
+        // setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &keepAlive, sizeof(int));
+        // setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &keepIdle, sizeof(int));
+        // setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &keepInterval, sizeof(int));
+        // setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &keepCount, sizeof(int));
+
+        // Convert ip address to string
+        if (source_addr.ss_family == PF_INET)
+        {
+            inet_ntoa_r(((struct sockaddr_in *)&source_addr)->sin_addr, addr_str, sizeof(addr_str) - 1);
+        }
+        ESP_LOGI("TCP SERVER", "Socket accepted ip address: %s", addr_str);
+
+        do_retransmit(sock);
+
+        shutdown(sock, 0);
+        close(sock);
     }
 
     ESP_LOGE("TCP SERVER TASK", "Closing port: %d", socketPort);
@@ -134,7 +175,7 @@ void TcpService::serverTask(void *pvParameters)
 
 void TcpService::CreateSocket(uint16_t port)
 {
-    xTaskCreate(serverTask, "TCP SERVER", 4096, (void *)port, 5, NULL);
+    xTaskCreate(serverTask, "TCP SERVER", TCP_TASK_SIZE, (uint16_t *)port, 5, NULL);
 }
 
 TcpService::~TcpService()

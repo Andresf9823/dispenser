@@ -1,6 +1,6 @@
 {
     "idf.adapterTargetName": "esp32",
-    "idf.portWin": "COM22",
+    "idf.portWin": "COM5",
     "idf.flashType": "UART",
     "C_Cpp.errorSquiggles": "disabled",
     "files.associations": {
@@ -17,6 +17,9 @@
         "xstring": "cpp",
         "xlocinfo": "cpp",
         "complex": "c",
-        "format": "c"
+        "format": "c",
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp"
     }
 }

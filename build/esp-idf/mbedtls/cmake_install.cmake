@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/aberdugo.CONSWARE/esp/esp-idf/components/mbedtls
+# Install script for directory: C:/Users/andre/esp/esp-idf/components/mbedtls
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -34,11 +34,11 @@ endif()
 
 # Set default install directory permissions.
 if(NOT DEFINED CMAKE_OBJDUMP)
-  set(CMAKE_OBJDUMP "C:/ESP32/.espressif/tools/xtensa-esp32-elf/esp-12.2.0_20230208/xtensa-esp32-elf/bin/xtensa-esp32-elf-objdump.exe")
+  set(CMAKE_OBJDUMP "C:/Espressif/frameworks/esp-idf-v5.1.2/tools/tools/xtensa-esp32-elf/esp-12.2.0_20230208/xtensa-esp32-elf/bin/xtensa-esp32-elf-objdump.exe")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("C:/Users/aberdugo.CONSWARE/Music/webDispenser/build/esp-idf/mbedtls/mbedtls/cmake_install.cmake")
+  include("C:/Users/andre/Documents/Git/dispenser/build/esp-idf/mbedtls/mbedtls/cmake_install.cmake")
 endif()
 

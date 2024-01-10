@@ -1,16 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
+#include <GlobalDefines.hpp>
 #include <esp_log.h>
 #include <Formatter.hpp>
 #include <InputsOutputs.hpp>
 #include <WiFiService.hpp>
 #include <UartsFunctions.hpp>
-
-/*Memory size*/
-#define KB (1024UL)
-#define MB (KB)(KB)
 
 using namespace std;
 
@@ -40,16 +33,16 @@ void logFloat(const char *TAG, double logFloating)
 	logString(TAG, (char *)charFloating);
 }
 
-void SendWifiApRecordsScanned()
+static void SendWifiApRecordsScanned()
 {
 	ApRecordList apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
 	uint16_t recordsScanned = Wifi->ScanWifiNetworks(apRecords);
-	// {
+
 	// 	logString(tag, apRecords[i].mac);
 	// 	logString(tag, apRecords[i].ssid);
 	// 	logDword(tag, apRecords[i].authMode);
 	// 	logDword(tag, apRecords[i].rssi);
-	// }
+
 	Format->apRecordsListToJson(apRecords, recordsScanned);
 }
 
@@ -77,12 +70,16 @@ void initObjects()
 	Wifi->logDword = logDword;
 	Wifi->logFloat = logFloat;
 	Wifi->InitWifiService(WiFiMode::ApStation);
+	Wifi->SendWifiApRecordsScanned = <static_cast> SendWifiApRecordsScanned;
 }
 
-extern "C" int app_main(void)
+extern "C" void app_main(void)
 {
 	logString(tag, "Go project!");
 	initObjects();
-	// SendWifiApRecordsScanned();
-	return 0;
+
+	while (true)
+	{
+		// Wifi->TcpAppStack();
+	}
 }

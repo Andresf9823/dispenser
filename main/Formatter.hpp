@@ -1,10 +1,7 @@
 #ifndef _FORMATTER_HPP_
 #define _FORMATTER_HPP_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
+#include <GlobalDefines.hpp>
 #include <WiFiService.hpp>
 #include <ArduinoJson-v6.21.3.h>
 

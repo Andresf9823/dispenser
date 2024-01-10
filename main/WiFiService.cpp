@@ -203,7 +203,6 @@ bool WifiService::InitWifiService(WiFiMode mode)
 
 uint16_t WifiService::ScanWifiNetworks(ApRecordList *apRecords)
 {
-
     this->logString(this->tag, "Start WiFi networks scanning");
     uint16_t numberOfApScanned = 0;
     wifi_ap_record_t apRecordsScanned[MAXIMUM_SIZE_OF_SCAN_LIST];
@@ -223,6 +222,5 @@ uint16_t WifiService::ScanWifiNetworks(ApRecordList *apRecords)
         apRecords[i].rssi = apRecordsScanned[i].rssi;
         apRecords[i].authMode = apRecordsScanned[i].authmode;
     }
-
     return numberOfApScanned;
 }
