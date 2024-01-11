@@ -4,19 +4,25 @@ TcpService::TcpService(/* args */)
 {
 }
 
-void TcpService::TcpAppStack(uint8_t *buffer)
+void TcpService::TcpAppStack()
 {
-    if (strlen((char *)buffer) > 0)
+    if (strlen(tcpBuffer) > 0)
     {
-        switch (uint(buffer[3]))
+        switch (tcpBuffer[3] & 0xFF)
         {
         case ProtocolCommand::sendWifiApRecords: // 7B 00 7C 1B 7C 7D
-            SendWifiApRecordsScanned();
+            this->SendWifiApRecordsScanned();
             break;
         default:
+            ESP_LOGI(tag, "tcpBuffer %d", tcpBuffer[3]);
             break;
         }
+        memset(tcpBuffer, 0, sizeof(tcpBuffer));
     }
+}
+
+void TcpService::SendTcpMessage(char *message)
+{
 }
 
 void TcpService::do_retransmit(const int sock)
@@ -51,12 +57,10 @@ void TcpService::do_retransmit(const int sock)
 
             ESP_LOGI("TCP retransmit", "Received %d bytes: %s", len, (const char *)data);
 
-            if (isValidFrame(rx_buffer))
+            if (isValidFrame(rx_buffer, len))
             {
                 memset(tcpBuffer, 0, sizeof(tcpBuffer));
-                memcpy(tcpBuffer, rx_buffer, len);
-
-                TcpAppStack(rx_buffer);
+                memcpy(tcpBuffer, (const char *)rx_buffer, sizeof(data));
             }
 
             // send() can return less bytes than supplied length.
@@ -77,18 +81,22 @@ void TcpService::do_retransmit(const int sock)
     } while (len > 0);
 }
 
-bool TcpService::isValidFrame(uint8_t *buffer)
+bool TcpService::isValidFrame(uint8_t *buffer, uint len)
 {
     bool begin, finish = false;
-    for (uint i = 0; i < sizeof(buffer); i++)
+    for (uint i = 0; i < len; i++)
     {
-        if (buffer[i] == '{')
+        if (buffer[i] == (uint8_t)'{')
             begin = true;
-        if (buffer[i] == '}')
+        if (buffer[i] == (uint8_t)'}')
             finish = true;
         if (begin && finish)
+        {
+            ESP_LOGI(tag, "%s", "Valid frame");
             return true;
+        }
     }
+    ESP_LOGE(tag, "%s", "Invalid frame");
     return false;
 }
 

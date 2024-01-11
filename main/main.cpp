@@ -5,8 +5,6 @@
 #include <WiFiService.hpp>
 #include <UartsFunctions.hpp>
 
-using namespace std;
-
 static const char *tag = "Main";
 
 Uarts *Uart;
@@ -33,16 +31,16 @@ void logFloat(const char *TAG, double logFloating)
 	logString(TAG, (char *)charFloating);
 }
 
-static void SendWifiApRecordsScanned()
+void SendWifiApRecordsScanned()
 {
 	ApRecordList apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
 	uint16_t recordsScanned = Wifi->ScanWifiNetworks(apRecords);
-
-	// 	logString(tag, apRecords[i].mac);
-	// 	logString(tag, apRecords[i].ssid);
-	// 	logDword(tag, apRecords[i].authMode);
-	// 	logDword(tag, apRecords[i].rssi);
-
+	/*
+		logString(tag, apRecords[i].mac);
+		logString(tag, apRecords[i].ssid);
+		logDword(tag, apRecords[i].authMode);
+		logDword(tag, apRecords[i].rssi);
+	*/
 	Format->apRecordsListToJson(apRecords, recordsScanned);
 }
 
@@ -70,16 +68,16 @@ void initObjects()
 	Wifi->logDword = logDword;
 	Wifi->logFloat = logFloat;
 	Wifi->InitWifiService(WiFiMode::ApStation);
-	Wifi->SendWifiApRecordsScanned = <static_cast> SendWifiApRecordsScanned;
+	Wifi->SendWifiApRecordsScanned = SendWifiApRecordsScanned;
 }
 
 extern "C" void app_main(void)
 {
 	logString(tag, "Go project!");
 	initObjects();
-
 	while (true)
 	{
-		// Wifi->TcpAppStack();
+		Wifi->TcpAppStack();
+		vTaskDelay(10);
 	}
 }

@@ -15,8 +15,10 @@
 #define MB (KB) * (KB)
 
 /*Tcp Buffers*/
-
 #define RX_BUFFER_SIZE 512
 #define TCP_TASK_SIZE 4096
+
+/*Namespaces*/
+using namespace std;
 
 #endif
