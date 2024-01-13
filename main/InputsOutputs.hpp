@@ -13,21 +13,20 @@
 
 #define BLINK_GPIO GPIO_NUM_2
 
-class InputsOutputs
-{
+class InputsOutputs {
 private:
-    const char *tag = "Gpio";
-    TimerHandle_t blinkTimerHandler;
-    uint32_t numberOfTimers = 0;
-    static void blinkTimerCallback(TimerHandle_t pdTimer);
+	const char *tag = "GPIO";
+	TimerHandle_t blinkTimerHandler;
+	uint32_t numberOfTimers = 0;
+	static void blinkTimerCallback(TimerHandle_t pdTimer);
 
 public:
-    InputsOutputs(/* args */);
-    void InitBlink();
-    void (*logString)(const char *TAG, const char *message);
-    void (*logDword)(const char *TAG, uint32_t logNumber);
-    void (*logFloat)(const char *TAG, double logFloating);
-    ~InputsOutputs();
+	InputsOutputs();
+	void InitBlink();
+	void (*logString)(const char *TAG, const char *message);
+	void (*logDword)(const char *TAG, uint32_t logNumber);
+	void (*logFloat)(const char *TAG, double logFloating);
+	~InputsOutputs();
 };
 
 #endif

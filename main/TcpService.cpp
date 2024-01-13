@@ -1,112 +1,189 @@
-#include "TcpService.hpp"
+#include <TcpService.hpp>
 
 TcpService::TcpService(/* args */)
 {
 }
 
-void TcpService::wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+void TcpService::TcpAppStack()
 {
-    if (event_base == WIFI_EVENT)
+    if (strlen(tcpBuffer) > 0)
     {
-        if (event_id == WIFI_EVENT_AP_START)
+        switch (tcpBuffer[3] & 0xFF)
         {
-            wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *)event_data;
-            ScanWifiNetworks();
+        case ProtocolCommand::sendWifiApRecords: // 7B 00 7C 1B 7C 7D
+            this->SendWifiApRecordsScanned();
+            break;
+        default:
+            ESP_LOGI(tag, "tcpBuffer %d", tcpBuffer[3]);
+            break;
         }
-        else if (event_id == WIFI_EVENT_AP_STACONNECTED)
-        {
-            wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *)event_data;
-        }
-        else if (event_id == WIFI_EVENT_AP_STADISCONNECTED)
-        {
-            wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *)event_data;
-        }
+        memset(tcpBuffer, 0, sizeof(tcpBuffer));
     }
 }
 
-void TcpService::InitTcpService(WiFiMode mode)
+void TcpService::SendTcpMessage(char *message)
 {
-    nvs_flash_init();
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
-                                                        ESP_EVENT_ANY_ID,
-                                                        &wifi_event_handler,
-                                                        NULL,
-                                                        NULL));
-
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
-                                                        IP_EVENT_STA_GOT_IP,
-                                                        &wifi_event_handler,
-                                                        NULL,
-                                                        NULL));
-
-    esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
-    assert(sta_netif);
-
-    switch (mode)
-    {
-    case WiFiMode::ApStation:
-        /* code */
-        break;
-    case WiFiMode::Station:
-        /* code */
-        break;
-    case WiFiMode::Ap:
-        wifi_config_t wifi_config;
-        wifi_config.ap = (wifi_ap_config_t){
-            .ssid = {'B', 'E', 'R', 'D', 'U', 'G', 'O', '_', 'E', 'S', 'P'},
-            .password = {'1', '2', '3', '4', '5', '6', '7', '8', '9'},
-            .ssid_len = sizeof("BERDUGO_ESP") - 1,
-            .channel = (uint8_t)10,
-            .authmode = WIFI_AUTH_WPA2_PSK,
-            .ssid_hidden = 0,
-            .max_connection = (uint8_t)5,
-            .beacon_interval = 100,
-            .pairwise_cipher = WIFI_CIPHER_TYPE_NONE,
-            .ftm_responder = 1
-            };
-
-        // if (strlen(EXAMPLE_ESP_WIFI_PASS) == 0)
-        // {
-        //     wifi_config.ap.authmode = WIFI_AUTH_OPEN;
-        // }
-
-        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-        ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
-        ESP_ERROR_CHECK(esp_wifi_start());
-
-        break;
-
-    default:
-        break;
-    }
 }
 
-void TcpService::ScanWifiNetworks()
+void TcpService::do_retransmit(const int sock)
 {
+    int len;
+    uint8_t rx_buffer[RX_BUFFER_SIZE];
 
-    uint16_t numberOfApScanned = 0;
-    uint16_t maximumSizeOfScanList = MAXIMUM_SIZE_OF_SCAN_LIST;
-    wifi_ap_record_t apRecords[maximumSizeOfScanList];
-    memset(apRecords, 0, maximumSizeOfScanList);
-
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_start());
-    esp_wifi_scan_start(NULL, true);
-    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&maximumSizeOfScanList, apRecords));
-    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&numberOfApScanned));
-
-    for (uint8_t i = 0; i < numberOfApScanned; i++)
+    do
     {
-        ESP_LOGI("WIFI SCAN:", "%s", (unsigned char *)apRecords[i].ssid);
-        ESP_LOGI("WIFI SCAN:", "%d", apRecords[i].rssi);
-        ESP_LOGI("WIFI SCAN:", "%d", apRecords[i].authmode);
+        len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
+
+        if (len < 0)
+        {
+            ESP_LOGE("TCP retransmit", "Error occurred during receiving: errno %d", errno);
+        }
+        else if (len == 0)
+        {
+            ESP_LOGW("TCP retransmit", "Connection closed");
+        }
+        else
+        {
+            rx_buffer[len] = 0; // Null-terminate whatever is received and treat it like a string
+
+            char data[sizeof(rx_buffer) * sizeof(char)];
+            memset(data, 0, sizeof(data));
+
+            uint k = 0;
+            for (uint i = 0; i < len; i++)
+            {
+                k += sprintf(data + k, "%02X ", rx_buffer[i]);
+            }
+
+            ESP_LOGI("TCP retransmit", "Received %d bytes: %s", len, (const char *)data);
+
+            if (isValidFrame(rx_buffer, len))
+            {
+                memset(tcpBuffer, 0, sizeof(tcpBuffer));
+                memcpy(tcpBuffer, (const char *)rx_buffer, sizeof(data));
+            }
+
+            // send() can return less bytes than supplied length.
+            // Walk-around for robust implementation.
+            // int to_write = len;
+            // while (to_write > 0)
+            // {
+            //     int written = send(sock, rx_buffer + (len - to_write), to_write, 0);
+            //     if (written < 0)
+            //     {
+            //         ESP_LOGE("TCP retransmit", "Error occurred during sending: errno %d", errno);
+            //         // Failed to retransmit, giving up
+            //         return;
+            //     }
+            //     to_write -= written;
+            // }
+        }
+    } while (len > 0);
+}
+
+bool TcpService::isValidFrame(uint8_t *buffer, uint len)
+{
+    bool begin, finish = false;
+    for (uint i = 0; i < len; i++)
+    {
+        if (buffer[i] == (uint8_t)'{')
+            begin = true;
+        if (buffer[i] == (uint8_t)'}')
+            finish = true;
+        if (begin && finish)
+        {
+            ESP_LOGI(tag, "%s", "Valid frame");
+            return true;
+        }
     }
+    ESP_LOGE(tag, "%s", "Invalid frame");
+    return false;
+}
+
+void TcpService::serverTask(void *pvParameters)
+{
+    int opt = 1;
+    int addressFamily = AF_INET;
+    int ipProtocol = 0;
+    int socketPort = (int)pvParameters;
+    bool listening = true;
+    struct sockaddr_storage destinationAddress;
+
+    struct sockaddr_in *destinationAddressIpv4 = (struct sockaddr_in *)&destinationAddress;
+    destinationAddressIpv4->sin_addr.s_addr = htonl(INADDR_ANY);
+    destinationAddressIpv4->sin_family = AF_INET;
+    destinationAddressIpv4->sin_port = htons(socketPort);
+    ipProtocol = IPPROTO_IP;
+
+    int listenSocket = socket(addressFamily, SOCK_STREAM, ipProtocol);
+    if (listenSocket < 0)
+    {
+        ESP_LOGE("TCP SERVER TASK", "Unable to create socket in port: %d ", socketPort);
+        vTaskDelete(NULL);
+        return;
+    }
+
+    ESP_LOGI("TCP SERVER TASK", "Socket created");
+
+    int err = bind(listenSocket, (struct sockaddr *)&destinationAddress, sizeof(destinationAddress));
+    if (err != 0)
+    {
+        ESP_LOGE("TCP SERVER TASK", "Socket unable to bind: errno %d", errno);
+        ESP_LOGE("TCP SERVER TASK", "IPPROTO: %d", addressFamily);
+        listening = false;
+    }
+
+    err = listen(listenSocket, 1);
+    if (err != 0)
+    {
+        ESP_LOGE("TCP SERVER TASK", "Error occurred during listen: errno %d", errno);
+        listening = false;
+    }
+
+    setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    char addr_str[128];
+
+    while (listening)
+    {
+        ESP_LOGI("TCP SERVER", "Socket listening");
+
+        struct sockaddr_storage source_addr; // Large enough for both IPv4 or IPv6
+        socklen_t addr_len = sizeof(source_addr);
+        int sock = accept(listenSocket, (struct sockaddr *)&source_addr, &addr_len);
+        if (sock < 0)
+        {
+            ESP_LOGE("TCP SERVER", "Unable to accept connection: errno %d", errno);
+            break;
+        }
+
+        // Set tcp keepalive option
+        // setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &keepAlive, sizeof(int));
+        // setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &keepIdle, sizeof(int));
+        // setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &keepInterval, sizeof(int));
+        // setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &keepCount, sizeof(int));
+
+        // Convert ip address to string
+        if (source_addr.ss_family == PF_INET)
+        {
+            inet_ntoa_r(((struct sockaddr_in *)&source_addr)->sin_addr, addr_str, sizeof(addr_str) - 1);
+        }
+        ESP_LOGI("TCP SERVER", "Socket accepted ip address: %s", addr_str);
+
+        do_retransmit(sock);
+
+        shutdown(sock, 0);
+        close(sock);
+    }
+
+    ESP_LOGE("TCP SERVER TASK", "Closing port: %d", socketPort);
+    shutdown(listenSocket, 0);
+    close(listenSocket);
+    vTaskDelete(NULL);
+}
+
+void TcpService::CreateSocket(uint16_t port)
+{
+    xTaskCreate(serverTask, "TCP SERVER", TCP_TASK_SIZE, (uint16_t *)port, 5, NULL);
 }
 
 TcpService::~TcpService()

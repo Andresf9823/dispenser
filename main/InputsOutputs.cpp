@@ -1,6 +1,6 @@
 #include "InputsOutputs.hpp"
 
-InputsOutputs::InputsOutputs(/* args */)
+InputsOutputs::InputsOutputs() // @suppress("Class members should be properly initialized")
 {
 }
 
