@@ -1,4 +1,4 @@
-# Install script for directory: C:/Users/andre/esp/esp-idf/components/mbedtls/mbedtls/library
+# Install script for directory: C:/Users/Maji/esp/esp-idf/components/mbedtls/mbedtls/library
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -34,18 +34,18 @@ endif()
 
 # Set default install directory permissions.
 if(NOT DEFINED CMAKE_OBJDUMP)
-  set(CMAKE_OBJDUMP "C:/Espressif/frameworks/esp-idf-v5.1.2/tools/tools/xtensa-esp32-elf/esp-12.2.0_20230208/xtensa-esp32-elf/bin/xtensa-esp32-elf-objdump.exe")
+  set(CMAKE_OBJDUMP "C:/Users/Maji/.espressif/tools/xtensa-esp32-elf/esp-12.2.0_20230208/xtensa-esp32-elf/bin/xtensa-esp32-elf-objdump.exe")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "C:/Users/andre/Documents/Git/dispenser/build/esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "C:/Users/Maji/Documents/Git/dispenser/build/esp-idf/mbedtls/mbedtls/library/libmbedcrypto.a")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "C:/Users/andre/Documents/Git/dispenser/build/esp-idf/mbedtls/mbedtls/library/libmbedx509.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "C:/Users/Maji/Documents/Git/dispenser/build/esp-idf/mbedtls/mbedtls/library/libmbedx509.a")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "C:/Users/andre/Documents/Git/dispenser/build/esp-idf/mbedtls/mbedtls/library/libmbedtls.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "C:/Users/Maji/Documents/Git/dispenser/build/esp-idf/mbedtls/mbedtls/library/libmbedtls.a")
 endif()
 

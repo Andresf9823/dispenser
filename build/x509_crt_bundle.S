@@ -1,4 +1,4 @@
-/* * Data converted from C:/Users/andre/Documents/Git/dispenser/build/esp-idf/mbedtls/x509_crt_bundle
+/* * Data converted from C:/Users/Maji/Documents/Git/dispenser/build/esp-idf/mbedtls/x509_crt_bundle
  */
 .data
 .section .rodata.embedded

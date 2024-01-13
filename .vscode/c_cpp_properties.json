@@ -3,10 +3,10 @@
         {
             "name": "Win32",
             "includePath": [
-                "${workspaceFolder}/**",
-                "C:/Users/andre/esp/esp-idf",
-                "C:/Users/andre/Documents/Git/dispenser",
-                "C:/Users/andre/esp/esp-idf/components"
+                "${workspaceFolder}/**"
+                // "C:/Users/andre/esp/esp-idf",
+                // "C:/Users/andre/Documents/Git/dispenser",
+                // "C:/Users/andre/esp/esp-idf/components"
             ],
             "defines": [
                 "_DEBUG",
