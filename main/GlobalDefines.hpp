@@ -2,10 +2,12 @@
 #define _GLOBAL_DEFINES_HPPP_
 
 /*Global includes*/
+#include <esp_log.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <string>
 
 /*Version*/
 #define VERSION_APP "0.0.1"
@@ -15,10 +17,11 @@
 #define MB (KB) * (KB)
 
 /*Tcp Buffers*/
-#define RX_BUFFER_SIZE 512
+#define TCP_RX_BUFFER_SIZE 512
+#define TCP_TX_BUFFER_SIZE 1536
 #define TCP_TASK_SIZE 4096
 
-/*Namespaces*/
-using namespace std;
+/*Uart Buffers*/
+#define UART_RX_BUFFER_SIZE 512
 
 #endif

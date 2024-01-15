@@ -1,34 +1,31 @@
 #include <GlobalDefines.hpp>
-#include <esp_log.h>
 #include <Formatter.hpp>
 #include <InputsOutputs.hpp>
 #include <WiFiService.hpp>
 #include <UartsFunctions.hpp>
 
-static const char *tag = "Main";
+using namespace std;
+
+static string tag = "MAIN";
 
 Uarts *Uart;
 Formatter *Format;
 InputsOutputs *Gpio;
 WifiService *Wifi;
 
-void logString(const char *TAG, const char *message)
+void logString(string TAG, string message)
 {
-	ESP_LOGI(TAG, "%s", (unsigned char *)message);
+	ESP_LOGI((const char *)TAG.c_str(), "%s", (unsigned char *)message.c_str());
 }
 
-void logDword(const char *TAG, uint32_t logNumber)
+void logDword(string TAG, int32_t logNumber)
 {
-	char charNumber[KB];
-	sprintf(charNumber, "%ld", logNumber);
-	logString(TAG, charNumber);
+	logString(TAG, to_string(logNumber));
 }
 
-void logFloat(const char *TAG, double logFloating)
+void logFloat(string TAG, double logFloating)
 {
-	char charFloating[KB];
-	sprintf(charFloating, "%f.2", logFloating);
-	logString(TAG, (char *)charFloating);
+	logString(TAG, to_string(logFloating));
 }
 
 void SendWifiApRecordsScanned()
@@ -41,7 +38,24 @@ void SendWifiApRecordsScanned()
 		logDword(tag, apRecords[i].authMode);
 		logDword(tag, apRecords[i].rssi);
 	*/
-	Format->apRecordsListToJson(apRecords, recordsScanned);
+	Wifi->SendTcpMessage(Format->apRecordsList(apRecords, recordsScanned));
+}
+
+void SendDeviceInfo()
+{
+	/*
+		Send a Json by TCP with this information:
+		MAC
+		Device IP
+		ID
+		URL's service
+		Service IP
+		Service PORT
+		Station Wifi where is connected, if it does
+		Ap mode SSID name
+		AP mode SSID password
+		Ap mode security
+	*/
 }
 
 void initObjects()
@@ -67,17 +81,19 @@ void initObjects()
 	Wifi->logString = logString;
 	Wifi->logDword = logDword;
 	Wifi->logFloat = logFloat;
-	Wifi->InitWifiService(WiFiMode::ApStation);
 	Wifi->SendWifiApRecordsScanned = SendWifiApRecordsScanned;
+	Wifi->SendDeviceInfo = SendDeviceInfo;
+	Wifi->InitWifiService(WiFiMode::ApStation);
 }
 
 extern "C" void app_main(void)
 {
 	logString(tag, "Go project!");
 	initObjects();
+
 	while (true)
 	{
 		Wifi->TcpAppStack();
-		vTaskDelay(10);
+		vTaskDelay(1);
 	}
 }

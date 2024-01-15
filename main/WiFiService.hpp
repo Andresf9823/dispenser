@@ -2,7 +2,6 @@
 #define _WIFI_SERVICE_HPP_
 
 #include <TcpService.hpp>
-#include <esp_log.h>
 #include <esp_event.h>
 #include <nvs_flash.h>
 #include <esp_wifi.h>
@@ -28,7 +27,7 @@ typedef struct _ApRecordList
 class WifiService : public TcpService
 {
 private:
-	const char *tag = "WIFI SERVICE";
+	static constexpr char *tag = "WIFI SERVICE";
 	wifi_config_t wifi_config;
 	void SetApConfig();
 	void SetStationConfig();

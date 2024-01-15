@@ -6,7 +6,6 @@
 #include <freertos/FreeRTOS.h>
 #include "freertos/task.h"
 #include <freertos/timers.h>
-#include <esp_log.h>
 #include <driver/uart.h>
 #include <driver/gpio.h>
 
@@ -19,6 +18,8 @@
 #define TX2_PIN GPIO_NUM_17
 #define RX2_PIN GPIO_NUM_16
 
+using namespace std;
+
 static uint8_t *uart0Buffer;
 static uint8_t *uart1Buffer;
 static uint8_t *uart2Buffer;
@@ -27,11 +28,11 @@ class Uarts
 {
 public:
 	Uarts();
-	const char *tag = "UART";
+	static constexpr string tag = "UART";
 	static bool UartInitializer(uint8_t uartNumber);
-	void (*logString)(const char *TAG, const char *message);
-	void (*logDword)(const char *TAG, uint32_t logNumber);
-	void (*logFloat)(const char *TAG, double logFloating);
+	void (*logString)(string TAG, string message);
+	void (*logDword)(string TAG, int32_t logNumber);
+	void (*logFloat)(string TAG, double logFloating);
 	~Uarts();
 
 private:

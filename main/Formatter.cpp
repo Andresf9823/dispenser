@@ -4,10 +4,10 @@ Formatter::Formatter(/* args */)
 {
 }
 
-DynamicJsonDocument Formatter::apRecordsListToJson(ApRecordList *apNetworks, uint16_t apQuantity)
+string Formatter::apRecordsList(ApRecordList *apNetworks, uint16_t apQuantity)
 {
-    char docString[1200];
-    DynamicJsonDocument doc(sizeof(docString));
+    string docString;
+    DynamicJsonDocument doc(TCP_TX_BUFFER_SIZE);
 
     doc["Id"] = 6;
     doc["Quantity"] = apQuantity;
@@ -21,8 +21,20 @@ DynamicJsonDocument Formatter::apRecordsListToJson(ApRecordList *apNetworks, uin
         data["Rssi"] = apNetworks[i].rssi;
         apItems.add(data);
     }
-    serializeJson(doc, docString, sizeof(docString));
-    this->logString(this->tag, (const char *)docString);
+    serializeJson(doc, docString);
+    this->logString(this->tag, docString.c_str());
+    return docString;
+}
+
+void Formatter::jsonToCharArray(DynamicJsonDocument doc, char *buffer)
+{
+    serializeJson(doc, buffer, sizeof(buffer));
+}
+
+DynamicJsonDocument Formatter::charArrayToJson(char *bufferIn)
+{
+    DynamicJsonDocument doc(sizeof(bufferIn));
+    deserializeJson(doc, bufferIn);
     return doc;
 }
 

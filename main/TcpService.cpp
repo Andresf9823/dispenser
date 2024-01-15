@@ -13,75 +13,101 @@ void TcpService::TcpAppStack()
         case ProtocolCommand::sendWifiApRecords: // 7B 00 7C 1B 7C 7D
             this->SendWifiApRecordsScanned();
             break;
+        case ProtocolCommand::sendDeviceInfo:
+            this->SendDeviceInfo();
+            break;
         default:
-            ESP_LOGI(tag, "tcpBuffer %d", tcpBuffer[3]);
+            logString(tag, "Invalid Character");
             break;
         }
         memset(tcpBuffer, 0, sizeof(tcpBuffer));
     }
 }
 
-void TcpService::SendTcpMessage(char *message)
+void TcpService::SendTcpMessage(string message)
 {
+    if (socketState != 0)
+    {
+        // send() can return less bytes than supplied length.
+        // Walk-around for robust implementation.
+        int to_write = strlen(message.c_str());
+        int len = strlen(message.c_str());
+        while (to_write > 0)
+        {
+            int written = send(socketState, message.c_str() + (len - to_write), to_write, 0);
+            if (written < 0)
+            {
+                ESP_LOGE("TCP retransmit", "Error occurred during sending: errno %d", errno);
+                // Failed to retransmit, giving up
+                return;
+            }
+            to_write -= written;
+        }
+    }
+    else
+    {
+        logString(tag, "Socket is not connected");
+    }
 }
 
 void TcpService::do_retransmit(const int sock)
 {
     int len;
-    uint8_t rx_buffer[RX_BUFFER_SIZE];
+    char rxTcpbuffer[TCP_RX_BUFFER_SIZE];
 
     do
     {
-        len = recv(sock, rx_buffer, sizeof(rx_buffer) - 1, 0);
 
+        len = recv(sock, rxTcpbuffer, sizeof(rxTcpbuffer) - 1, 0);
+        socketState = sock;
         if (len < 0)
         {
             ESP_LOGE("TCP retransmit", "Error occurred during receiving: errno %d", errno);
         }
         else if (len == 0)
         {
+            socketState = sock;
             ESP_LOGW("TCP retransmit", "Connection closed");
         }
         else
         {
-            rx_buffer[len] = 0; // Null-terminate whatever is received and treat it like a string
-
-            char data[sizeof(rx_buffer) * sizeof(char)];
+            rxTcpbuffer[len] = 0; // Null-terminate whatever is received and treat it like a string
+            char data[sizeof(rxTcpbuffer) * sizeof(char)];
             memset(data, 0, sizeof(data));
 
             uint k = 0;
             for (uint i = 0; i < len; i++)
             {
-                k += sprintf(data + k, "%02X ", rx_buffer[i]);
+                k += sprintf(data + k, "%02X ", rxTcpbuffer[i]);
             }
-
             ESP_LOGI("TCP retransmit", "Received %d bytes: %s", len, (const char *)data);
 
-            if (isValidFrame(rx_buffer, len))
+            if (isValidFrame(rxTcpbuffer, len))
             {
-                memset(tcpBuffer, 0, sizeof(tcpBuffer));
-                memcpy(tcpBuffer, (const char *)rx_buffer, sizeof(data));
+                memset(tcpBuffer, 0, TCP_RX_BUFFER_SIZE);
+                memcpy(tcpBuffer, (const char *)rxTcpbuffer, TCP_RX_BUFFER_SIZE);
             }
-
-            // send() can return less bytes than supplied length.
-            // Walk-around for robust implementation.
-            // int to_write = len;
-            // while (to_write > 0)
-            // {
-            //     int written = send(sock, rx_buffer + (len - to_write), to_write, 0);
-            //     if (written < 0)
-            //     {
-            //         ESP_LOGE("TCP retransmit", "Error occurred during sending: errno %d", errno);
-            //         // Failed to retransmit, giving up
-            //         return;
-            //     }
-            //     to_write -= written;
-            // }
+            /*
+                        // send() can return less bytes than supplied length.
+                        // Walk-around for robust implementation.
+                        // int to_write = len;
+                        while (to_write > 0)
+                        {
+                            int written = send(sock, rxTcpbuffer + (len - to_write), to_write, 0);
+                            if (written < 0)
+                            {
+                                ESP_LOGE("TCP retransmit", "Error occurred during sending: errno %d", errno);
+                                // Failed to retransmit, giving up
+                                return;
+                            }
+                            to_write -= written;
+                        }*/
+            memset(rxTcpbuffer, 0, TCP_RX_BUFFER_SIZE);
         }
     } while (len > 0);
 }
 
-bool TcpService::isValidFrame(uint8_t *buffer, uint len)
+bool TcpService::isValidFrame(char *buffer, uint len)
 {
     bool begin, finish = false;
     for (uint i = 0; i < len; i++)
@@ -92,11 +118,10 @@ bool TcpService::isValidFrame(uint8_t *buffer, uint len)
             finish = true;
         if (begin && finish)
         {
-            ESP_LOGI(tag, "%s", "Valid frame");
             return true;
         }
     }
-    ESP_LOGE(tag, "%s", "Invalid frame");
+    ESP_LOGE("Incoming frame validation", "%s", "Invalid frame");
     return false;
 }
 

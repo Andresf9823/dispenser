@@ -172,7 +172,8 @@ bool WifiService::InitWifiService(WiFiMode mode)
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); // @suppress("Invalid arguments")
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    this->logString(tag, "Initializing WiFi mode: " + mode);
+    this->logString(tag, "-> Initializing WiFi mode <-");
+    this->logDword(tag, mode);
 
     switch (mode)
     {

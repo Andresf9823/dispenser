@@ -14,34 +14,38 @@
 #include "lwip/sys.h"
 #include <lwip/netdb.h>
 
+using namespace std;
+
 typedef enum protocolCommand
 {
     sendDeviceInfo = 0x0B,
     sendWifiApRecords = 0x1B,
 } ProtocolCommand;
 
-#define CommandSendWifiApRecords 0x1B
-
-static char tcpBuffer[RX_BUFFER_SIZE];
+static char tcpBuffer[TCP_RX_BUFFER_SIZE];
+static int socketState;
 
 class TcpService
 {
 private:
-    static constexpr char *tag = "TCP";
+    static constexpr string tag = "TCP";
+    static bool isValidFrame(char *frame, uint len);
     static void serverTask(void *pvParameters);
     static void do_retransmit(const int sock);
-    static bool isValidFrame(uint8_t *frame, uint len);
+
+protected:
+    void CreateSocket(uint16_t port);
 
 public:
     TcpService(/* args */);
-    void CreateSocket(uint16_t port);
     void TcpAppStack();
-    void SendTcpMessage(char *message);
-    void (*SendWifiApRecordsScanned)(void);
+    void SendTcpMessage(string message);
 
-    void (*logString)(const char *TAG, const char *message);
-    void (*logDword)(const char *TAG, uint32_t logNumber);
-    void (*logFloat)(const char *TAG, double logFloating);
+    void (*logString)(string TAG, string message);
+    void (*logDword)(string TAG, int32_t logNumber);
+    void (*logFloat)(string TAG, double logFloating);
+    void (*SendWifiApRecordsScanned)(void);
+    void (*SendDeviceInfo)(void);
 
     ~TcpService();
 };
