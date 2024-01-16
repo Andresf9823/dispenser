@@ -9,6 +9,8 @@
 #include <driver/uart.h>
 #include <driver/gpio.h>
 
+using namespace std;
+
 #define TX0_PIN GPIO_NUM_1
 #define RX0_PIN GPIO_NUM_3
 
@@ -18,7 +20,7 @@
 #define TX2_PIN GPIO_NUM_17
 #define RX2_PIN GPIO_NUM_16
 
-using namespace std;
+#define UART_RX_BUFFER_SIZE 512
 
 static uint8_t *uart0Buffer;
 static uint8_t *uart1Buffer;

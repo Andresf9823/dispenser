@@ -13,7 +13,7 @@ void TcpService::TcpAppStack()
         case ProtocolCommand::sendWifiApRecords: // 7B 00 7C 1B 7C 7D
             this->SendWifiApRecordsScanned();
             break;
-        case ProtocolCommand::sendDeviceInfo:
+        case ProtocolCommand::sendDeviceInfo:    // 7B 00 7C 1B 7C 7D
             this->SendDeviceInfo();
             break;
         default:

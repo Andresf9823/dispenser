@@ -111,7 +111,7 @@ void WifiService::SetStationConfig()
 
     wifi_config = {.sta =
                        {
-                           .ssid = {'L', 'u', 'a', 'n', 'a'},
+                           .ssid = {'M', 'A', 'R', 'Y'},
                            .password = {'3', '2', '7', '2', '7', '7', '4', '7'},
                            .scan_method = WIFI_ALL_CHANNEL_SCAN,
                            .bssid_set = 0,
@@ -133,6 +133,30 @@ void WifiService::SetStationConfig()
                            .failure_retry_cnt = 5,
                        }};
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+}
+
+NetworkIpAddress WifiService::GetStaConfig()
+{
+    logString(tag, "Searching Station Config");
+    NetworkIpAddress station;
+    wifi_ap_record_t ap;
+
+    if (ESP_FAIL == esp_wifi_sta_get_ap_info(&ap))
+        return station;
+
+    static esp_netif_t *ip;
+    esp_netif_ip_info_t ipInfo;
+    esp_netif_get_ip_info(ip, &ipInfo);
+
+    station.ssid = (const char *)&ap.ssid;
+    station.auth = ap.authmode;
+    station.mode = WIFI_MODE_STA;
+    station.password = "NULL";
+    memcpy(station.mac, ap.bssid, sizeof(ap.bssid));
+    memcpy(station.ip, &ipInfo.ip, sizeof(ipInfo.ip));
+    memcpy(station.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
+    memcpy(station.gateway, &ipInfo.gw, sizeof(ipInfo.gw));
+    return station;
 }
 
 void WifiService::SetApConfig()
@@ -157,23 +181,45 @@ void WifiService::SetApConfig()
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
 }
 
+NetworkIpAddress WifiService::GetApConfig()
+{
+    logString(tag, "Searching Ap Config");
+    NetworkIpAddress apConfig;
+    // wifi_ap_record_t ap;
+
+    // if (ESP_FAIL == esp_wifi_sta_get_ap_info(&ap))
+    //     return apConfig;
+
+    // esp_netif_ip_info_t ipInfo;
+    // static esp_netif_t *ip;
+    // esp_netif_get_ip_info(ip, &ipInfo);
+
+    // apConfig.ssid = (const char *)&ap.ssid;
+    // apConfig.auth = ap.authmode;
+    apConfig.mode = WIFI_MODE_AP;
+    apConfig.password = "NULL";
+    // memcpy(apConfig.mac, ap.bssid, sizeof(ap.bssid));
+    // memcpy(apConfig.ip, &ipInfo.ip, sizeof(ipInfo.ip));
+    // memcpy(apConfig.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
+    // memcpy(apConfig.gateway, &ipInfo.gw, sizeof(ipInfo.gw));
+
+    return apConfig;
+}
+
 bool WifiService::InitWifiService(WiFiMode mode)
 {
     esp_netif_init();
     nvs_flash_init();
     esp_event_loop_create_default();
 
-    ESP_ERROR_CHECK(
-        esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL));
-
-    ESP_ERROR_CHECK(
-        esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL, NULL));
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); // @suppress("Invalid arguments")
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    this->logString(tag, "-> Initializing WiFi mode <-");
-    this->logDword(tag, mode);
+    logString(tag, "-> Initializing WiFi mode <-");
+    logDword(tag, mode);
 
     switch (mode)
     {
@@ -204,7 +250,7 @@ bool WifiService::InitWifiService(WiFiMode mode)
 
 uint16_t WifiService::ScanWifiNetworks(ApRecordList *apRecords)
 {
-    this->logString(this->tag, "Start WiFi networks scanning");
+    logString(tag, "Start WiFi networks scanning");
     uint16_t numberOfApScanned = 0;
     wifi_ap_record_t apRecordsScanned[MAXIMUM_SIZE_OF_SCAN_LIST];
     uint16_t maximumSizeOfScanList = MAXIMUM_SIZE_OF_SCAN_LIST;
@@ -215,13 +261,36 @@ uint16_t WifiService::ScanWifiNetworks(ApRecordList *apRecords)
     numberOfApScanned = numberOfApScanned > MAXIMUM_SIZE_OF_SCAN_LIST ? MAXIMUM_SIZE_OF_SCAN_LIST : numberOfApScanned;
     for (uint8_t i = 0; i < numberOfApScanned; i++)
     {
-        sprintf(apRecords[i].mac, "%02X:%02X:%02X:%02X:%02X:%02X",
-                apRecordsScanned[i].bssid[0], apRecordsScanned[i].bssid[1],
-                apRecordsScanned[i].bssid[2], apRecordsScanned[i].bssid[3],
-                apRecordsScanned[i].bssid[4], apRecordsScanned[i].bssid[5]);
-        memcpy(apRecords[i].ssid, apRecordsScanned[i].ssid, 33);
+        memcpy(apRecords[i].mac, apRecordsScanned[i].bssid, sizeof(apRecordsScanned[i].bssid));
+        memcpy(apRecords[i].ssid, apRecordsScanned[i].ssid, sizeof(apRecordsScanned[i].ssid));
         apRecords[i].rssi = apRecordsScanned[i].rssi;
         apRecords[i].authMode = apRecordsScanned[i].authmode;
     }
     return numberOfApScanned;
+}
+
+WifiConfig WifiService::GetConfig()
+{
+    WifiConfig config;
+    wifi_mode_t mode;
+    esp_wifi_get_mode(&mode);
+    config.mode = (WiFiMode)mode;
+
+    switch (config.mode)
+    {
+    case WiFiMode::Ap:
+        config.ApConfig = this->GetApConfig();
+        break;
+    case WiFiMode::Station:
+        config.StaConfig = this->GetStaConfig();
+        break;
+    case WiFiMode::ApStation:
+        config.ApConfig = this->GetApConfig();
+        config.StaConfig = this->GetStaConfig();
+        break;
+    default:
+        config.mode = WiFiMode::Unkown;
+        break;
+    }
+    return config;
 }

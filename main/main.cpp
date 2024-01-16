@@ -1,8 +1,8 @@
 #include <GlobalDefines.hpp>
-#include <Formatter.hpp>
 #include <InputsOutputs.hpp>
-#include <WiFiService.hpp>
 #include <UartsFunctions.hpp>
+#include <WiFiService.hpp>
+#include <Formatter.hpp>
 
 using namespace std;
 
@@ -32,30 +32,24 @@ void SendWifiApRecordsScanned()
 {
 	ApRecordList apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
 	uint16_t recordsScanned = Wifi->ScanWifiNetworks(apRecords);
-	/*
-		logString(tag, apRecords[i].mac);
-		logString(tag, apRecords[i].ssid);
-		logDword(tag, apRecords[i].authMode);
-		logDword(tag, apRecords[i].rssi);
-	*/
 	Wifi->SendTcpMessage(Format->apRecordsList(apRecords, recordsScanned));
 }
 
 void SendDeviceInfo()
 {
+	DeviceInformation deviceInfo;
+
+	deviceInfo.deviceId = (uint32_t)1234980623;
+	deviceInfo.versionApp = VERSION_APP;
+	deviceInfo.wifiConfig = Wifi->GetConfig();
 	/*
 		Send a Json by TCP with this information:
-		MAC
-		Device IP
-		ID
-		URL's service
-		Service IP
-		Service PORT
-		Station Wifi where is connected, if it does
-		Ap mode SSID name
-		AP mode SSID password
-		Ap mode security
+
+		WebServices ->suscribed ->IP
+		WebServices ->suscribed ->PORT
+		WebServices ->suscribed ->URL's Service
 	*/
+	Wifi->SendTcpMessage(Format->deviceInformation(deviceInfo));
 }
 
 void initObjects()

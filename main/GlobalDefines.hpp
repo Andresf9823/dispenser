@@ -16,12 +16,4 @@
 #define KB (1024UL)
 #define MB (KB) * (KB)
 
-/*Tcp Buffers*/
-#define TCP_RX_BUFFER_SIZE 512
-#define TCP_TX_BUFFER_SIZE 1536
-#define TCP_TASK_SIZE 4096
-
-/*Uart Buffers*/
-#define UART_RX_BUFFER_SIZE 512
-
 #endif

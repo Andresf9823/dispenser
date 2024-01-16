@@ -16,6 +16,10 @@
 
 using namespace std;
 
+#define TCP_RX_BUFFER_SIZE (KB)/2
+#define TCP_TX_BUFFER_SIZE (KB)*(1.5)
+#define TCP_TASK_SIZE      (KB)*(4)
+
 typedef enum protocolCommand
 {
     sendDeviceInfo = 0x0B,

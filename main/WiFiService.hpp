@@ -1,6 +1,7 @@
 #ifndef _WIFI_SERVICE_HPP_
 #define _WIFI_SERVICE_HPP_
 
+#include <GlobalDefines.hpp>
 #include <TcpService.hpp>
 #include <esp_event.h>
 #include <nvs_flash.h>
@@ -11,26 +12,48 @@
 
 typedef enum WiFiMode
 {
-	ApStation,
+	Unkown,
 	Station,
-	Ap
+	Ap,
+	ApStation
 } _WifiMode;
 
 typedef struct _ApRecordList
 {
 	char ssid[33];
-	char mac[18];
+	uint8_t mac[6];
 	uint8_t authMode;
 	uint8_t rssi;
 } ApRecordList;
 
+typedef struct _NetworkIpAddress
+{
+	string ssid;
+	string password;
+	uint8_t auth;
+	uint8_t mode;
+	uint8_t mac[6];
+	uint8_t ip[4];
+	uint8_t mask[4];
+	uint8_t gateway[4];
+} NetworkIpAddress;
+
+typedef struct _WifiConfig
+{
+	WiFiMode mode;
+	NetworkIpAddress ApConfig;
+	NetworkIpAddress StaConfig;
+} WifiConfig;
+
 class WifiService : public TcpService
 {
 private:
-	static constexpr char *tag = "WIFI SERVICE";
+	static constexpr string tag = "WIFI SERVICE";
 	wifi_config_t wifi_config;
 	void SetApConfig();
 	void SetStationConfig();
+	NetworkIpAddress GetApConfig();
+	NetworkIpAddress GetStaConfig();
 	static wifi_config_t defaultWifiConfig;
 	static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
@@ -38,6 +61,7 @@ public:
 	WifiService();
 	bool InitWifiService(WiFiMode mode);
 	uint16_t ScanWifiNetworks(ApRecordList *apRecords);
+	WifiConfig GetConfig();
 	~WifiService();
 };
 #endif
