@@ -103,34 +103,34 @@ void WifiService::wifi_event_handler(void *arg, esp_event_base_t event_base, int
     }
 }
 
-void WifiService::SetStationConfig()
+void WifiService::SetStationConfig(bool dhcpEnlabled)
 {
     this->logString(tag, "Setting Station configuration");
-    esp_netif_t *sta_netif_sta = esp_netif_create_default_wifi_sta();
-    assert(sta_netif_sta);
+    esp_netif_t *esp_netif_sta = esp_netif_create_default_wifi_sta();
+    assert(esp_netif_sta);
 
     wifi_config = {.sta =
                        {
                            .ssid = {'M', 'A', 'R', 'Y'},
                            .password = {'3', '2', '7', '2', '7', '7', '4', '7'},
                            .scan_method = WIFI_ALL_CHANNEL_SCAN,
-                           .bssid_set = 0,
+                           //    .bssid_set = 0,
                            .bssid = {0x00, 0xA4, 0x03, 0x10, 0x00, 0x01}, /**< MAC address of target AP*/
-                           .channel = 0,
-                           .listen_interval = 3,
-                           .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
+                                                                          //    .channel = 0,
+                                                                          //    .listen_interval = 3,
+                                                                          //    .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
                            .threshold = (wifi_scan_threshold_t){.rssi = 99, .authmode = WIFI_AUTH_WPA2_PSK},
-                           .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
-                           .rm_enabled = (uint32_t)1,
-                           .btm_enabled = (uint32_t)1,
-                           .mbo_enabled = (uint32_t)1,
-                           //		.bo_enabled = (uint32_t)1,
-                           .ft_enabled = (uint32_t)1,
-                           .owe_enabled = (uint32_t)1,
-                           .transition_disable = (uint32_t)1,
-                           .reserved = (uint32_t)26,
-                           .sae_pwe_h2e = WPA3_SAE_PWE_UNSPECIFIED,
-                           .failure_retry_cnt = 5,
+                           //    .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
+                           //    .rm_enabled = (uint32_t)1,
+                           //    .btm_enabled = (uint32_t)1,
+                           //    .mbo_enabled = (uint32_t)1,
+                           //    //		.bo_enabled = (uint32_t)1,
+                           //    .ft_enabled = (uint32_t)1,
+                           //    .owe_enabled = (uint32_t)1,
+                           //    .transition_disable = (uint32_t)1,
+                           //    .reserved = (uint32_t)26,
+                           //    .sae_pwe_h2e = WPA3_SAE_PWE_UNSPECIFIED,
+                           //    .failure_retry_cnt = 5,
                        }};
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
 }
@@ -141,41 +141,65 @@ NetworkIpAddress WifiService::GetStaConfig()
     NetworkIpAddress station;
     wifi_ap_record_t ap;
 
-    if (ESP_FAIL == esp_wifi_sta_get_ap_info(&ap))
-        return station;
+    if (ESP_OK != esp_wifi_sta_get_ap_info(&ap))
+    {
+        station.ssid = "NULL";
+        station.auth = 0;
+        station.mode = WIFI_MODE_STA;
+        station.password = "NULL";
+        memset(station.mac, 0, sizeof(station.mac));
+        memset(station.ip, 0, sizeof(station.ip));
+        memset(station.mask, 0, sizeof(station.mask));
+        memset(station.gateway, 0, sizeof(station.gateway));
+    }
+    else
+    {
 
-    static esp_netif_t *ip;
-    esp_netif_ip_info_t ipInfo;
-    esp_netif_get_ip_info(ip, &ipInfo);
+        esp_netif_ip_info_t ipInfo;
+        esp_netif_get_ip_info(esp_netif_sta, &ipInfo);
 
-    station.ssid = (const char *)&ap.ssid;
-    station.auth = ap.authmode;
-    station.mode = WIFI_MODE_STA;
-    station.password = "NULL";
-    memcpy(station.mac, ap.bssid, sizeof(ap.bssid));
-    memcpy(station.ip, &ipInfo.ip, sizeof(ipInfo.ip));
-    memcpy(station.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
-    memcpy(station.gateway, &ipInfo.gw, sizeof(ipInfo.gw));
+        station.ssid = (const char *)&ap.ssid;
+        station.auth = ap.authmode;
+        station.mode = WIFI_MODE_STA;
+        station.password = "NULL";
+        memcpy(station.mac, ap.bssid, sizeof(ap.bssid));
+        memcpy(station.ip, &ipInfo.ip, sizeof(ipInfo.ip));
+        memcpy(station.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
+        memcpy(station.gateway, &ipInfo.gw, sizeof(ipInfo.gw));
+    }
     return station;
 }
 
-void WifiService::SetApConfig()
+void WifiService::SetApConfig(bool dhcpEnlabled)
 {
     this->logString(tag, "Setting Access Point configuration");
-    esp_netif_t *esp_netif_ap = esp_netif_create_default_wifi_ap();
+    esp_netif_ap = esp_netif_create_default_wifi_ap();
+    if (!dhcpEnlabled)
+    {
+        logString(tag, "Setting satic Ip Configuration");
+        esp_netif_dhcpc_stop(esp_netif_ap);
+    }
+    uint8_t defaultMac[6] = {(uint8_t)MAC_0, (uint8_t)MAC_1, (uint8_t)MAC_2, (uint8_t)MAC_3, (uint8_t)MAC_4, (uint8_t)MAC_5};
+    esp_netif_ip_info_t ipInfo;
+    esp_netif_set_ip4_addr(&ipInfo.ip, (uint8_t)IP_ADDRESS_0, (uint8_t)IP_ADDRESS_1, (uint8_t)IP_ADDRESS_2, (uint8_t)IP_ADDRESS_3);
+    esp_netif_set_ip4_addr(&ipInfo.netmask, (uint8_t)NETMASK_0, (uint8_t)NETMASK_1, (uint8_t)NETMASK_2, (uint8_t)NETMASK_3);
+    esp_netif_set_ip4_addr(&ipInfo.gw, (uint8_t)GATEWAY_0, (uint8_t)GATEWAY_1, (uint8_t)GATEWAY_2, (uint8_t)GATEWAY_3);
+    esp_netif_set_hostname(esp_netif_ap, "BERDUGO_ESP");
+    esp_netif_set_ip_info(esp_netif_ap, &ipInfo);
+    esp_netif_set_mac(esp_netif_ap, defaultMac);
     assert(esp_netif_ap);
     wifi_config = {.ap =
                        {
                            .ssid = {'B', 'E', 'R', 'D', 'U', 'G', 'O', '_', 'E', 'S', 'P'},
                            .password = {'1', '2', '3', '4', '5', '6', '7', '8', '9'},
                            .ssid_len = sizeof("BERDUGO_ESP") - 1,
-                           .channel = (uint8_t)10,
+                        //    .channel = (uint8_t)10,
                            .authmode = WIFI_AUTH_WPA2_PSK,
                            .ssid_hidden = 0,
                            .max_connection = (uint8_t)5,
                            .beacon_interval = 100,
                            .pairwise_cipher = WIFI_CIPHER_TYPE_NONE,
-                           .ftm_responder = 1,
+                        //    .ftm_responder = 1,
                            .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false}}};
 
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
@@ -185,28 +209,27 @@ NetworkIpAddress WifiService::GetApConfig()
 {
     logString(tag, "Searching Ap Config");
     NetworkIpAddress apConfig;
-    // wifi_ap_record_t ap;
+    esp_netif_ip_info_t ipInfo;
+    static const char *hostName;
+    uint8_t mac[6];
+    esp_netif_get_ip_info(esp_netif_ap, &ipInfo);
+    esp_netif_get_hostname(esp_netif_ap, &hostName);
+    esp_netif_get_mac(esp_netif_ap, mac);
 
-    // if (ESP_FAIL == esp_wifi_sta_get_ap_info(&ap))
-    //     return apConfig;
-
-    // esp_netif_ip_info_t ipInfo;
-    // static esp_netif_t *ip;
-    // esp_netif_get_ip_info(ip, &ipInfo);
-
-    // apConfig.ssid = (const char *)&ap.ssid;
+    apConfig.ssid = string(hostName);
     // apConfig.auth = ap.authmode;
     apConfig.mode = WIFI_MODE_AP;
-    apConfig.password = "NULL";
-    // memcpy(apConfig.mac, ap.bssid, sizeof(ap.bssid));
-    // memcpy(apConfig.ip, &ipInfo.ip, sizeof(ipInfo.ip));
-    // memcpy(apConfig.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
-    // memcpy(apConfig.gateway, &ipInfo.gw, sizeof(ipInfo.gw));
+    apConfig.password = esp_netif_get_ifkey(esp_netif_ap);
+
+    memcpy(apConfig.mac, mac, sizeof(mac));
+    memcpy(apConfig.ip, &ipInfo.ip, sizeof(ipInfo.ip));
+    memcpy(apConfig.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
+    memcpy(apConfig.gateway, &ipInfo.gw, sizeof(ipInfo.gw));
 
     return apConfig;
 }
 
-bool WifiService::InitWifiService(WiFiMode mode)
+bool WifiService::InitWifiService(WiFiMode mode, bool isApDhcpEnlabled, bool isStaDhcpEnlabled)
 {
     esp_netif_init();
     nvs_flash_init();
@@ -225,16 +248,16 @@ bool WifiService::InitWifiService(WiFiMode mode)
     {
     case WiFiMode::Ap:
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-        SetApConfig();
+        SetApConfig(isApDhcpEnlabled);
         break;
     case WiFiMode::Station:
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-        SetStationConfig();
+        SetStationConfig(isStaDhcpEnlabled);
         break;
     case WiFiMode::ApStation:
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
-        SetStationConfig();
-        SetApConfig();
+        SetStationConfig(isStaDhcpEnlabled);
+        SetApConfig(isApDhcpEnlabled);
         break;
     default:
         return false;

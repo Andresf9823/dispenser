@@ -16,15 +16,28 @@
 
 using namespace std;
 
-#define TCP_RX_BUFFER_SIZE (KB)/2
-#define TCP_TX_BUFFER_SIZE (KB)*(1.5)
-#define TCP_TASK_SIZE      (KB)*(4)
+#define TCP_RX_BUFFER_SIZE (KB) / 2
+#define TCP_TX_BUFFER_SIZE (KB) * (1.5)
+#define TCP_TASK_SIZE (KB) * (4)
 
 typedef enum protocolCommand
 {
     sendDeviceInfo = 0x0B,
     sendWifiApRecords = 0x1B,
 } ProtocolCommand;
+
+typedef struct _NetworkIpAddress
+{
+    string ssid;
+    string password;
+    uint8_t auth;
+    uint8_t mode;
+    uint8_t mac[6];
+    uint8_t ip[4];
+    uint8_t mask[4];
+    uint8_t gateway[4];
+    bool dhcpEnlabled;
+} NetworkIpAddress;
 
 static char tcpBuffer[TCP_RX_BUFFER_SIZE];
 static int socketState;
