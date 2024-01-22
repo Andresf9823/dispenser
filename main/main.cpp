@@ -77,7 +77,7 @@ void initObjects()
 	Wifi->logFloat = logFloat;
 	Wifi->SendWifiApRecordsScanned = SendWifiApRecordsScanned;
 	Wifi->SendDeviceInfo = SendDeviceInfo;
-	Wifi->InitWifiService(WiFiMode::ApStation, false, false);
+	Wifi->InitWifiService(WiFiMode::ApStation);
 }
 
 extern "C" void app_main(void)

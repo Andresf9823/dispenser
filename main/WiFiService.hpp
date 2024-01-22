@@ -10,28 +10,6 @@
 
 #define MAXIMUM_SIZE_OF_SCAN_LIST 10
 
-#define IP_ADDRESS_0 192
-#define IP_ADDRESS_1 168
-#define IP_ADDRESS_2 0
-#define IP_ADDRESS_3 1
-
-#define NETMASK_0 192
-#define NETMASK_1 168
-#define NETMASK_2 0
-#define NETMASK_3 1
-
-#define GATEWAY_0 192
-#define GATEWAY_1 168
-#define GATEWAY_2 0
-#define GATEWAY_3 1
-
-#define MAC_0 0x00
-#define MAC_1 0x0A
-#define MAC_2 0x00
-#define MAC_3 0x01
-#define MAC_4 0x00
-#define MAC_5 0xFF
-
 typedef enum WiFiMode
 {
 	Unkown,
@@ -55,16 +33,13 @@ typedef struct _WifiConfig
 	NetworkIpAddress StaConfig;
 } WifiConfig;
 
-static esp_netif_t *esp_netif_ap;
-static esp_netif_t *esp_netif_sta;
-
 class WifiService : public TcpService
 {
 private:
 	static constexpr string tag = "WIFI SERVICE";
 	wifi_config_t wifi_config;
-	void SetApConfig(bool dhcpEnlabled);
-	void SetStationConfig(bool dhcpEnlabled);
+	void SetApConfig();
+	void SetStationConfig();
 	NetworkIpAddress GetApConfig();
 	NetworkIpAddress GetStaConfig();
 	static wifi_config_t defaultWifiConfig;
@@ -72,7 +47,7 @@ private:
 
 public:
 	WifiService();
-	bool InitWifiService(WiFiMode mode, bool apDhcp, bool staDhcp);
+	bool InitWifiService(WiFiMode mode);
 	uint16_t ScanWifiNetworks(ApRecordList *apRecords);
 	WifiConfig GetConfig();
 	~WifiService();

@@ -13,7 +13,7 @@ void TcpService::TcpAppStack()
         case ProtocolCommand::sendWifiApRecords: // 7B 00 7C 1B 7C 7D
             this->SendWifiApRecordsScanned();
             break;
-        case ProtocolCommand::sendDeviceInfo:    // 7B 00 7C 1B 7C 7D
+        case ProtocolCommand::sendDeviceInfo: // 7B 00 7C 1B 7C 7D
             this->SendDeviceInfo();
             break;
         default:
@@ -132,12 +132,11 @@ void TcpService::serverTask(void *pvParameters)
     int ipProtocol = 0;
     int socketPort = (int)pvParameters;
     bool listening = true;
-    struct sockaddr_storage destinationAddress;
+    struct sockaddr_in destinationAddress;
+    destinationAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+    destinationAddress.sin_family = AF_INET;
+    destinationAddress.sin_port = htons(socketPort);
 
-    struct sockaddr_in *destinationAddressIpv4 = (struct sockaddr_in *)&destinationAddress;
-    destinationAddressIpv4->sin_addr.s_addr = htonl(INADDR_ANY);
-    destinationAddressIpv4->sin_family = AF_INET;
-    destinationAddressIpv4->sin_port = htons(socketPort);
     ipProtocol = IPPROTO_IP;
 
     int listenSocket = socket(addressFamily, SOCK_STREAM, ipProtocol);
@@ -204,6 +203,82 @@ void TcpService::serverTask(void *pvParameters)
     shutdown(listenSocket, 0);
     close(listenSocket);
     vTaskDelete(NULL);
+}
+
+void TcpService::SetApIpAddress()
+{
+    logString(tag, "Setting AP Ip Configuration");
+
+    uint8_t mac[6] = {0x00, 0x01, 0x0A, 0x10, 0x00, 0x01};
+    esp_netif_ip_info_t ipInfo;
+    IP4_ADDR(&ipInfo.ip, 192, 168, 0, 1);
+    IP4_ADDR(&ipInfo.netmask, 255, 255, 255, 0);
+    IP4_ADDR(&ipInfo.gw, 192, 168, 0, 1);
+
+    const esp_netif_inherent_config_t interfaceConfig = {.flags = (esp_netif_flags_t)(ESP_NETIF_IPV4_ONLY_FLAGS(ESP_NETIF_DHCP_SERVER) | ESP_NETIF_FLAG_AUTOUP),
+                                                         .mac = {0x00, 0x01, 0x0A, 0x10, 0x00, 0x01},
+                                                         .ip_info = &ipInfo,
+                                                         .get_ip_event = 0,
+                                                         .lost_ip_event = 0,
+                                                         .if_key = "Access Point",
+                                                         .if_desc = "ap",
+                                                         .route_prio = 10,
+                                                         .bridge_info = NULL};
+
+    esp_netif_config_t cfg = {.base = &interfaceConfig,
+                              .driver = NULL,
+                              .stack = ESP_NETIF_NETSTACK_DEFAULT_WIFI_AP};
+
+    esp_netif_ap = esp_netif_new(&cfg);
+    assert(esp_netif_ap);
+    ESP_ERROR_CHECK(esp_netif_attach_wifi_ap(esp_netif_ap));
+    ESP_ERROR_CHECK(esp_wifi_set_default_wifi_ap_handlers());
+
+    esp_netif_dhcps_stop(esp_netif_ap);
+    esp_netif_set_hostname(esp_netif_ap, "BERDUGO_ESP");
+    esp_netif_set_ip_info(esp_netif_ap, &ipInfo);
+    esp_netif_set_mac(esp_netif_ap, mac);
+    esp_netif_dhcps_start(esp_netif_ap);
+
+    logString(tag, "Finish Ip Configuration");
+}
+
+void TcpService::SetStaIpAddress()
+{
+    logString(tag, "Setting STA Ip Configuration");
+
+    uint8_t mac[6] = {0x00, 0x01, 0x0A, 0x10, 0x00, 0x00};
+    esp_netif_ip_info_t ipInfo;
+    IP4_ADDR(&ipInfo.ip, 192, 168, 0, 1);
+    IP4_ADDR(&ipInfo.netmask, 255, 255, 255, 0);
+    IP4_ADDR(&ipInfo.gw, 192, 168, 0, 1);
+
+    const esp_netif_inherent_config_t interfaceConfig = {.flags = (esp_netif_flags_t)(ESP_NETIF_IPV4_ONLY_FLAGS(ESP_NETIF_DHCP_CLIENT) | ESP_NETIF_DEFAULT_ARP_FLAGS | ESP_NETIF_DEFAULT_MLDV6_REPORT_FLAGS | ESP_NETIF_FLAG_EVENT_IP_MODIFIED),
+                                                         .mac = {0x00, 0x01, 0x0A, 0x10, 0x00, 0x00},
+                                                         .ip_info = &ipInfo,
+                                                         .get_ip_event = IP_EVENT_STA_GOT_IP,
+                                                         .lost_ip_event = IP_EVENT_STA_LOST_IP,
+                                                         .if_key = "Station",
+                                                         .if_desc = "sta",
+                                                         .route_prio = 100,
+                                                         .bridge_info = NULL};
+
+    esp_netif_config_t cfg = {.base = &interfaceConfig,
+                              .driver = NULL,
+                              .stack = ESP_NETIF_NETSTACK_DEFAULT_WIFI_STA};
+
+    esp_netif_sta = esp_netif_new(&cfg);
+    assert(esp_netif_sta);
+    ESP_ERROR_CHECK(esp_netif_attach_wifi_station(esp_netif_sta));
+    ESP_ERROR_CHECK(esp_wifi_set_default_wifi_sta_handlers());
+
+    esp_netif_dhcps_stop(esp_netif_sta);
+    esp_netif_set_hostname(esp_netif_sta, "BERDUGO");
+    esp_netif_set_ip_info(esp_netif_sta, &ipInfo);
+    esp_netif_set_mac(esp_netif_sta, mac);
+    esp_netif_dhcps_start(esp_netif_sta);
+
+    logString(tag, "Finish Ip Configuration");
 }
 
 void TcpService::CreateSocket(uint16_t port)
