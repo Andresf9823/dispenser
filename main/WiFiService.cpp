@@ -4,7 +4,7 @@ WifiService::WifiService(/* args */) // @suppress("Class members should be prope
 {
 }
 
-void WifiService::wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+void WifiService::WifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     if (event_base == WIFI_EVENT)
     {
@@ -106,15 +106,15 @@ void WifiService::wifi_event_handler(void *arg, esp_event_base_t event_base, int
 void WifiService::SetStationConfig()
 {
     this->logString(tag, "Setting Station configuration");
-    this->SetStaIpAddress();
+    this->SetIpAddress(NetworkInterface::WifiStation);
 
     wifi_config = {.sta =
                        {
                            .ssid = {'M', 'A', 'R', 'Y'},
                            .password = {'3', '2', '7', '2', '7', '7', '4', '7'},
                            .scan_method = WIFI_ALL_CHANNEL_SCAN,
-                           //    .bssid_set = 0,
-                           .bssid = {0x00, 0xA4, 0x03, 0x10, 0x00, 0x01}, /**< MAC address of target AP*/
+                           .bssid_set = 0,
+                           .bssid = {0x00, 0x01, 0x0A, 0x10, 0x00, 0x02}, /**< MAC address of target AP*/
                                                                           //    .channel = 0,
                                                                           //    .listen_interval = 3,
                                                                           //    .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
@@ -172,7 +172,7 @@ NetworkIpAddress WifiService::GetStaConfig()
 void WifiService::SetApConfig()
 {
     this->logString(tag, "Setting Access Point configuration");
-    this->SetApIpAddress();
+    this->SetIpAddress(NetworkInterface::WifiAp);
 
     wifi_config = {.ap =
                        {
@@ -221,10 +221,10 @@ bool WifiService::InitWifiService(WiFiMode mode)
     nvs_flash_init();
     esp_event_loop_create_default();
 
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifi_event_handler, NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WifiEventHandler, NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &WifiEventHandler, NULL, NULL));
 
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT(); // @suppress("Invalid arguments")
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
     logString(tag, "-> Initializing WiFi mode <-");

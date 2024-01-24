@@ -2,6 +2,7 @@
 #include <InputsOutputs.hpp>
 #include <UartsFunctions.hpp>
 #include <WiFiService.hpp>
+#include <FileSystem.hpp>
 #include <Formatter.hpp>
 
 using namespace std;
@@ -12,6 +13,7 @@ Uarts *Uart;
 Formatter *Format;
 InputsOutputs *Gpio;
 WifiService *Wifi;
+FileSystem *File;
 
 void logString(string TAG, string message)
 {
@@ -52,8 +54,26 @@ void SendDeviceInfo()
 	Wifi->SendTcpMessage(Format->deviceInformation(deviceInfo));
 }
 
+void SetDefaultMemoryValues()
+{
+	File->SetDefaultValues();
+}
+
+void RestartSystem()
+{
+	logString(tag, "RESTARTING SYSTEM IN 3 SECONDS");
+	for (uint8_t i = 0; i < 3; i++)
+	{
+		logString(tag, ".");
+		vTaskDelay(pdMS_TO_TICKS(1000));
+	}
+	esp_restart();
+}
+
 void initObjects()
 {
+	File = new FileSystem();
+
 	Uart = new Uarts();
 	Uart->logString = logString;
 	Uart->logDword = logDword;
@@ -75,8 +95,10 @@ void initObjects()
 	Wifi->logString = logString;
 	Wifi->logDword = logDword;
 	Wifi->logFloat = logFloat;
-	Wifi->SendWifiApRecordsScanned = SendWifiApRecordsScanned;
+	Wifi->RestartSystem = RestartSystem;
 	Wifi->SendDeviceInfo = SendDeviceInfo;
+	Wifi->SendWifiApRecordsScanned = SendWifiApRecordsScanned;
+	Wifi->SetDefaultMemoryValues = SetDefaultMemoryValues;
 	Wifi->InitWifiService(WiFiMode::ApStation);
 }
 

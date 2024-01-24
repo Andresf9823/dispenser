@@ -37,8 +37,10 @@ using namespace std;
 
 typedef enum protocolCommand
 {
+    restartSystem = 0x00,
     sendDeviceInfo = 0x0B,
     sendWifiApRecords = 0x1B,
+    setDefaultMemoryValues = 0x0C
 } ProtocolCommand;
 
 typedef struct _NetworkIpAddress
@@ -53,6 +55,13 @@ typedef struct _NetworkIpAddress
     uint8_t gateway[4];
     bool dhcpEnlabled;
 } NetworkIpAddress;
+
+typedef enum _NetworkInterface
+{
+    Ethernet,
+    WifiAp,
+    WifiStation,
+} NetworkInterface;
 
 /*TcpSocker buffer and state flag*/
 static char tcpBuffer[TCP_RX_BUFFER_SIZE];
@@ -69,8 +78,8 @@ private:
 protected:
     esp_netif_t *esp_netif_ap;
     esp_netif_t *esp_netif_sta;
-    void SetApIpAddress();
-    void SetStaIpAddress();
+    esp_netif_t *esp_netif_eth;
+    void SetIpAddress(NetworkInterface interface);
     void CreateSocket(uint16_t port);
 
 public:
@@ -81,7 +90,9 @@ public:
     void (*logString)(string TAG, string message);
     void (*logDword)(string TAG, int32_t logNumber);
     void (*logFloat)(string TAG, double logFloating);
+    void (*RestartSystem)(void);
     void (*SendWifiApRecordsScanned)(void);
+    void (*SetDefaultMemoryValues)(void);
     void (*SendDeviceInfo)(void);
 
     ~TcpService();

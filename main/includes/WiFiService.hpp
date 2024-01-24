@@ -43,7 +43,7 @@ private:
 	NetworkIpAddress GetApConfig();
 	NetworkIpAddress GetStaConfig();
 	static wifi_config_t defaultWifiConfig;
-	static void wifi_event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
+	static void WifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data);
 
 public:
 	WifiService();
