@@ -1,0 +1,25 @@
+{
+    "idf.adapterTargetName": "esp32",
+    "idf.portWin": "COM3",
+    "idf.flashType": "UART",
+    "C_Cpp.errorSquiggles": "disabled",
+    "files.associations": {
+        "charconv": "cpp",
+        "fstream": "cpp",
+        "istream": "cpp",
+        "memory": "cpp",
+        "ostream": "cpp",
+        "random": "cpp",
+        "sstream": "cpp",
+        "streambuf": "cpp",
+        "system_error": "cpp",
+        "xlocbuf": "cpp",
+        "xstring": "cpp",
+        "xlocinfo": "cpp",
+        "complex": "c",
+        "format": "c",
+        "array": "cpp",
+        "string": "cpp",
+        "string_view": "cpp"
+    }
+}

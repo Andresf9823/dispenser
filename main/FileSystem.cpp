@@ -42,7 +42,7 @@ bool FileSystem::WriteUint32tRecord(string _key, uint32_t record)
     if (this->Open(_key, NVS_READWRITE))
     {
         uint32_t record = 0;
-        ESP_LOGE(tag.c_str(), "Value:: '%d'", record);
+        ESP_LOGE(tag.c_str(), "Value:: '%ld'", record);
         readed = this->ErrorCheck(nvs_set_u32(handle, key, record), _key);
         nvs_close(handle);
         return readed;
