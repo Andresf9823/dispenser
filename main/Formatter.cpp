@@ -71,6 +71,36 @@ string Formatter::apRecordsList(ApRecordList *apNetworks, uint16_t apQuantity)
     return docString;
 }
 
+void Formatter::stringToIpAddress(uint8_t *_ip, string rawIp)
+{
+    const char *separator = ",";
+    char *Ip = (char *)rawIp.c_str();
+    char *token = strtok(Ip, separator);
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        if (token != NULL)
+        {
+            _ip[i] = static_cast<uint8_t>(atoi(token));
+            token = strtok(NULL, separator);
+        }
+    }
+}
+
+void Formatter::stringToMac(uint8_t *_mac, string rawMac)
+{
+    const char *separator = ":";
+    char *mac = (char *)rawMac.c_str();
+    char *token = strtok(mac, separator);
+    for (uint8_t i = 0; i < 6; i++)
+    {
+        if (token != NULL)
+        {
+            _mac[i] = static_cast<uint8_t>(atoi(token));
+            token = strtok(NULL, separator);
+        }
+    }
+}
+
 string Formatter::ipAddressToString(uint8_t *ipAddress)
 {
     string ipString;

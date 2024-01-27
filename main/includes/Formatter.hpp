@@ -10,11 +10,13 @@ using namespace std;
 class Formatter
 {
 private:
-    /* data */
-public:
-    Formatter(/* args */);
     static constexpr string tag = "FORMATTER";
+
+public:
+    Formatter();
     void jsonToCharArray(DynamicJsonDocument doc, char *bufferIn);
+    void stringToIpAddress(uint8_t *ip, string rawIp);
+    void stringToMac(uint8_t *_mac, string rawMac);
     string ipAddressToString(uint8_t *ipAddress);
     string macToString(uint8_t *macAddress, uint8_t macSize);
     string deviceInformation(DeviceInformation deviceInfo);

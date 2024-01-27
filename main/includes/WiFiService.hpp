@@ -10,13 +10,13 @@
 
 #define MAXIMUM_SIZE_OF_SCAN_LIST 10
 
-typedef enum WiFiMode
+typedef enum _WiFiMode
 {
 	Unkown,
 	Station,
 	Ap,
 	ApStation
-} _WifiMode;
+} WiFiMode;
 
 typedef struct _ApRecordList
 {
@@ -38,8 +38,8 @@ class WifiService : public TcpService
 private:
 	static constexpr string tag = "WIFI SERVICE";
 	wifi_config_t wifi_config;
-	void SetApConfig();
-	void SetStationConfig();
+	void SetApConfig(WifiConfig config);
+	void SetStationConfig(WifiConfig config);
 	NetworkIpAddress GetApConfig();
 	NetworkIpAddress GetStaConfig();
 	static wifi_config_t defaultWifiConfig;
@@ -47,7 +47,7 @@ private:
 
 public:
 	WifiService();
-	bool InitWifiService(WiFiMode mode);
+	bool InitWifiService(WifiConfig config);
 	uint16_t ScanWifiNetworks(ApRecordList *apRecords);
 	WifiConfig GetConfig();
 	~WifiService();

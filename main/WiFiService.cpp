@@ -103,10 +103,10 @@ void WifiService::WifiEventHandler(void *arg, esp_event_base_t event_base, int32
     }
 }
 
-void WifiService::SetStationConfig()
+void WifiService::SetStationConfig(WifiConfig config)
 {
     this->logString(tag, "Setting Station configuration");
-    this->SetIpAddress(NetworkInterface::WifiStation);
+    this->SetIpAddress(NetworkInterface::WifiStation, config.StaConfig);
 
     wifi_config = {.sta =
                        {
@@ -169,10 +169,10 @@ NetworkIpAddress WifiService::GetStaConfig()
     return station;
 }
 
-void WifiService::SetApConfig()
+void WifiService::SetApConfig(WifiConfig config)
 {
     this->logString(tag, "Setting Access Point configuration");
-    this->SetIpAddress(NetworkInterface::WifiAp);
+    this->SetIpAddress(NetworkInterface::WifiAp, config.ApConfig);
 
     wifi_config = {.ap =
                        {
@@ -202,7 +202,7 @@ NetworkIpAddress WifiService::GetApConfig()
     esp_netif_get_mac(esp_netif_ap, mac);
 
     apConfig.ssid = string(hostName);
-    // apConfig.auth = ap.authmode;
+    apConfig.auth = WIFI_AUTH_WPA2_PSK;
     apConfig.mode = WIFI_MODE_AP;
     apConfig.password = esp_netif_get_ifkey(esp_netif_ap);
 
@@ -215,7 +215,7 @@ NetworkIpAddress WifiService::GetApConfig()
     return apConfig;
 }
 
-bool WifiService::InitWifiService(WiFiMode mode)
+bool WifiService::InitWifiService(WifiConfig config)
 {
     esp_netif_init();
     nvs_flash_init();
@@ -229,22 +229,23 @@ bool WifiService::InitWifiService(WiFiMode mode)
 
     logString(tag, "-> Initializing WiFi mode <-");
 
-    switch (mode)
+    switch (config.mode)
     {
     case WiFiMode::Ap:
         esp_wifi_set_mode(WIFI_MODE_AP);
-        SetApConfig();
+        SetApConfig(config);
         break;
     case WiFiMode::Station:
         esp_wifi_set_mode(WIFI_MODE_STA);
-        SetStationConfig();
+        SetStationConfig(config);
         break;
     case WiFiMode::ApStation:
         esp_wifi_set_mode(WIFI_MODE_APSTA);
-        SetApConfig();
-        SetStationConfig();
+        SetApConfig(config);
+        SetStationConfig(config);
         break;
     default:
+        logString(tag, "Wifi mode unknown");
         return false;
         break;
     }

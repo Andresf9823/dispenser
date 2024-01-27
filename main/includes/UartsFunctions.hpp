@@ -31,7 +31,7 @@ class Uarts
 public:
 	Uarts();
 	static constexpr string tag = "UART";
-	static bool UartInitializer(uint8_t uartNumber);
+	bool UartInitializer(uint8_t uartNumber);
 	void (*logString)(string TAG, string message);
 	void (*logDword)(string TAG, int32_t logNumber);
 	void (*logFloat)(string TAG, double logFloating);

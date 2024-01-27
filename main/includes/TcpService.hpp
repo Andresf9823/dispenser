@@ -20,21 +20,6 @@ using namespace std;
 #define TCP_TX_BUFFER_SIZE (KB) * (1.5)
 #define TCP_TASK_SIZE (KB) * (4)
 
-#define IP_ADDRESS_0 192
-#define IP_ADDRESS_1 168
-#define IP_ADDRESS_2 0
-#define IP_ADDRESS_3 1
-
-#define NETMASK_0 192
-#define NETMASK_1 168
-#define NETMASK_2 0
-#define NETMASK_3 1
-
-#define GATEWAY_0 192
-#define GATEWAY_1 168
-#define GATEWAY_2 0
-#define GATEWAY_3 1
-
 typedef enum protocolCommand
 {
     restartSystem = 0x00,
@@ -79,7 +64,7 @@ protected:
     esp_netif_t *esp_netif_ap;
     esp_netif_t *esp_netif_sta;
     esp_netif_t *esp_netif_eth;
-    void SetIpAddress(NetworkInterface interface);
+    void SetIpAddress(NetworkInterface interface, NetworkIpAddress ipConfig);
     void CreateSocket(uint16_t port);
 
 public:

@@ -41,7 +41,7 @@ void SendDeviceInfo()
 {
 	DeviceInformation deviceInfo;
 
-	deviceInfo.deviceId = (uint32_t)1234980623;
+	deviceInfo.deviceId = File->ReadUint32tRecord(NVS_DEVICE_ID);
 	deviceInfo.versionApp = VERSION_APP;
 	deviceInfo.wifiConfig = Wifi->GetConfig();
 	/*
@@ -73,12 +73,13 @@ void RestartSystem()
 void initObjects()
 {
 	File = new FileSystem();
-
+	SetDefaultMemoryValues();
 	Uart = new Uarts();
 	Uart->logString = logString;
 	Uart->logDword = logDword;
 	Uart->logFloat = logFloat;
-	Uart->UartInitializer(2);
+	if (File->ReadBooleanRecord(NVS_UART2_EN))
+		Uart->UartInitializer(2);
 
 	Format = new Formatter();
 	Format->logString = logString;
@@ -99,7 +100,8 @@ void initObjects()
 	Wifi->SendDeviceInfo = SendDeviceInfo;
 	Wifi->SendWifiApRecordsScanned = SendWifiApRecordsScanned;
 	Wifi->SetDefaultMemoryValues = SetDefaultMemoryValues;
-	Wifi->InitWifiService(WiFiMode::ApStation);
+
+	Wifi->InitWifiService(File->ReadWifiConfig());
 }
 
 extern "C" void app_main(void)

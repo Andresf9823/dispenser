@@ -10,10 +10,10 @@ void TcpService::TcpAppStack()
     {
         switch (tcpBuffer[3] & 0xFF)
         {
-        case ProtocolCommand::restartSystem:    // 7B 00 7C 00 7C 7D
+        case ProtocolCommand::restartSystem: // 7B 00 7C 00 7C 7D
             this->RestartSystem();
             break;
-        case ProtocolCommand::sendDeviceInfo:    // 7B 00 7C 0B 7C 7D
+        case ProtocolCommand::sendDeviceInfo: // 7B 00 7C 0B 7C 7D
             this->SendDeviceInfo();
             break;
         case ProtocolCommand::sendWifiApRecords: // 7B 00 7C 1B 7C 7D
@@ -211,17 +211,18 @@ void TcpService::serverTask(void *pvParameters)
     vTaskDelete(NULL);
 }
 
-void TcpService::SetIpAddress(NetworkInterface interface)
+void TcpService::SetIpAddress(NetworkInterface interface, NetworkIpAddress ipConfig)
 {
 
     logString(tag, "Setting Ip Configuration");
-    // uint8_t mac[6]
     esp_netif_ip_info_t ipInfo;
     esp_netif_inherent_config_t interfaceConfig;
     esp_netif_config_t cfg;
-    IP4_ADDR(&ipInfo.ip, 192, 168, 0, 1);
-    IP4_ADDR(&ipInfo.netmask, 255, 255, 255, 0);
-    IP4_ADDR(&ipInfo.gw, 192, 168, 0, 1);
+
+    IP4_ADDR(&ipInfo.ip, ipConfig.ip[0], ipConfig.ip[1], ipConfig.ip[2], ipConfig.ip[3]);
+    IP4_ADDR(&ipInfo.netmask, ipConfig.mask[0], ipConfig.mask[1], ipConfig.mask[2], ipConfig.mask[3]);
+    IP4_ADDR(&ipInfo.gw, ipConfig.gateway[0], ipConfig.gateway[1], ipConfig.gateway[2], ipConfig.gateway[3]);
+
     switch (interface)
     {
     case NetworkInterface::Ethernet:
@@ -230,7 +231,7 @@ void TcpService::SetIpAddress(NetworkInterface interface)
     case NetworkInterface::WifiAp:
         logString(tag, "WifiAp");
         interfaceConfig = {.flags = (esp_netif_flags_t)(ESP_NETIF_IPV4_ONLY_FLAGS(ESP_NETIF_DHCP_SERVER) | ESP_NETIF_FLAG_AUTOUP),
-                           .mac = {0x00, 0x01, 0x0A, 0x10, 0x00, 0x01},
+                           .mac = {ipConfig.mac[0], ipConfig.mac[1], ipConfig.mac[2], ipConfig.mac[3], ipConfig.mac[4], ipConfig.mac[5]},
                            .ip_info = &ipInfo,
                            .get_ip_event = 0,
                            .lost_ip_event = 0,
@@ -248,7 +249,8 @@ void TcpService::SetIpAddress(NetworkInterface interface)
         esp_netif_set_hostname(esp_netif_ap, "BERDUGO_ESP");
         ESP_ERROR_CHECK(esp_netif_set_mac(esp_netif_ap, interfaceConfig.mac));
         esp_netif_set_ip_info(esp_netif_ap, &ipInfo);
-        esp_netif_dhcps_start(esp_netif_ap);
+        if (ipConfig.dhcpEnlabled)
+            esp_netif_dhcps_start(esp_netif_ap);
         assert(esp_netif_ap);
         ESP_ERROR_CHECK(esp_netif_attach_wifi_ap(esp_netif_ap));
         ESP_ERROR_CHECK(esp_wifi_set_default_wifi_ap_handlers());
@@ -256,7 +258,7 @@ void TcpService::SetIpAddress(NetworkInterface interface)
     case NetworkInterface::WifiStation:
         logString(tag, "WifiStation");
         interfaceConfig = {.flags = (esp_netif_flags_t)(ESP_NETIF_IPV4_ONLY_FLAGS(ESP_NETIF_DHCP_CLIENT) | ESP_NETIF_DEFAULT_ARP_FLAGS | ESP_NETIF_DEFAULT_MLDV6_REPORT_FLAGS | ESP_NETIF_FLAG_EVENT_IP_MODIFIED),
-                           .mac = {0x00, 0x01, 0x0A, 0x10, 0x00, 0x02},
+                           .mac = {ipConfig.mac[0], ipConfig.mac[1], ipConfig.mac[2], ipConfig.mac[3], ipConfig.mac[4], ipConfig.mac[5]},
                            .ip_info = &ipInfo,
                            .get_ip_event = IP_EVENT_STA_GOT_IP,
                            .lost_ip_event = IP_EVENT_STA_LOST_IP,
@@ -274,7 +276,8 @@ void TcpService::SetIpAddress(NetworkInterface interface)
         esp_netif_set_hostname(esp_netif_sta, "BERDUGO");
         ESP_ERROR_CHECK(esp_netif_set_mac(esp_netif_sta, interfaceConfig.mac));
         esp_netif_set_ip_info(esp_netif_sta, &ipInfo);
-        esp_netif_dhcpc_start(esp_netif_sta);
+        if (ipConfig.dhcpEnlabled)
+            esp_netif_dhcpc_start(esp_netif_sta);
         assert(esp_netif_sta);
         ESP_ERROR_CHECK(esp_netif_attach_wifi_station(esp_netif_sta));
         ESP_ERROR_CHECK(esp_wifi_set_default_wifi_sta_handlers());

@@ -52,7 +52,6 @@ bool Uarts::UartInitializer(uint8_t uartNumber)
 {
 	if (uartNumber < 3)
 	{
-
 		const uart_config_t uartDefaultConfig = {.baud_rate = 9600, .data_bits = UART_DATA_8_BITS, .parity = UART_PARITY_DISABLE, .stop_bits = UART_STOP_BITS_1, .flow_ctrl = UART_HW_FLOWCTRL_DISABLE, .rx_flow_ctrl_thresh = (uint8_t)UART_RX_BUFFER_SIZE, .source_clk = UART_SCLK_DEFAULT};
 
 		switch (uartNumber)
@@ -90,5 +89,7 @@ bool Uarts::UartInitializer(uint8_t uartNumber)
 		}
 		return true;
 	}
+	logString(tag, "HW for Uart interface don't exist:");
+	logDword(tag, uartNumber);
 	return false;
 }
