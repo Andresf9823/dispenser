@@ -131,6 +131,7 @@ void WifiService::SetStationConfig(WifiConfig config)
                            //    .sae_pwe_h2e = WPA3_SAE_PWE_UNSPECIFIED,
                            //    .failure_retry_cnt = 5,
                        }};
+    esp_wifi_set_mac(WIFI_IF_STA, config.StaConfig.mac);
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
 }
 
@@ -182,11 +183,13 @@ void WifiService::SetApConfig(WifiConfig config)
                            //    .channel = (uint8_t)10,
                            .authmode = WIFI_AUTH_WPA2_PSK,
                            .ssid_hidden = 0,
-                           .max_connection = (uint8_t)5,
+                           .max_connection = (uint8_t)10,
                            .beacon_interval = 100,
                            .pairwise_cipher = WIFI_CIPHER_TYPE_NONE,
                            //    .ftm_responder = 1,
-                           .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false}}};
+                           //    .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
+                       }};
+    esp_wifi_set_mac(WIFI_IF_AP, config.ApConfig.mac);
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
 }
 

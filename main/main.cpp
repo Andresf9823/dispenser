@@ -73,7 +73,7 @@ void RestartSystem()
 void initObjects()
 {
 	File = new FileSystem();
-	SetDefaultMemoryValues();
+	
 	Uart = new Uarts();
 	Uart->logString = logString;
 	Uart->logDword = logDword;

@@ -59,10 +59,20 @@ WifiConfig FileSystem::ReadWifiConfig()
     WifiConfig config;
     uint8_t ip[4];
     uint8_t mac[6];
+    uint8_t macSize = sizeof(mac);
+    uint8_t ipSize = sizeof(ip);
+
+    memset(config.ApConfig.mac, 0, sizeof(config.ApConfig.mac));
+    memset(config.ApConfig.ip, 0, sizeof(config.ApConfig.ip));
+    memset(config.ApConfig.mask, 0, sizeof(config.ApConfig.mask));
+    memset(config.ApConfig.gateway, 0, sizeof(config.ApConfig.gateway));
+
+    memset(config.StaConfig.mac, 0, sizeof(config.StaConfig.mac));
+    memset(config.StaConfig.ip, 0, sizeof(config.StaConfig.ip));
+    memset(config.StaConfig.mask, 0, sizeof(config.StaConfig.mask));
+    memset(config.StaConfig.gateway, 0, sizeof(config.StaConfig.gateway));
 
     ESP_LOGI(tag.c_str(), "%s", "Reading Wifi Configuration");
-    memset(ip, 0, sizeof(ip));
-    memset(mac, 0, sizeof(mac));
     config.mode = static_cast<WiFiMode>(this->ReadUint8tRecord(NVS_WIFI_MODE));
 
     ESP_LOGI(tag.c_str(), "%s", "Reading Ap Configuration");
@@ -73,17 +83,13 @@ WifiConfig FileSystem::ReadWifiConfig()
 
     ESP_LOGI(tag.c_str(), "%s", "Reading AP ipAddress");
     format.stringToMac(mac, this->ReadStringRecord(NVS_AP_MAC));
-    memcpy(config.ApConfig.mac, mac, sizeof(sizeof(mac)));
-    memset(mac, 0, sizeof(mac));
+    memcpy(config.ApConfig.mac, mac, macSize);
     format.stringToIpAddress(ip, this->ReadStringRecord(NVS_AP_IP_ADDRESS));
-    memcpy(config.ApConfig.ip, ip, sizeof(config.ApConfig.ip));
-    memset(ip, 0, sizeof(ip));
+    memcpy(config.ApConfig.ip, ip, ipSize);
     format.stringToIpAddress(ip, this->ReadStringRecord(NVS_AP_SUBNET));
-    memcpy(config.ApConfig.mask, ip, sizeof(config.ApConfig.mask));
-    memset(ip, 0, sizeof(ip));
+    memcpy(config.ApConfig.mask, ip, ipSize);
     format.stringToIpAddress(ip, this->ReadStringRecord(NVS_AP_GATEWAY));
-    memcpy(config.ApConfig.gateway, ip, sizeof(config.ApConfig.gateway));
-    memset(ip, 0, sizeof(ip));
+    memcpy(config.ApConfig.gateway, ip, ipSize);
 
     ESP_LOGI(tag.c_str(), "%s", "Reading Sta Configuration");
     config.StaConfig.auth = static_cast<WiFiMode>(this->ReadUint8tRecord(NVS_STA_AUTH_MODE));
@@ -91,19 +97,15 @@ WifiConfig FileSystem::ReadWifiConfig()
     config.StaConfig.password = this->ReadStringRecord(NVS_STA_PASSWORD);
     config.StaConfig.dhcpEnlabled = this->ReadBooleanRecord(NVS_STA_DHCP_ENABLE);
 
-    ESP_LOGI(tag.c_str(), "%s", "Reading Sta ipaddress");
+    ESP_LOGI(tag.c_str(), "%s", "Reading Sta ipAddress");
     format.stringToMac(mac, this->ReadStringRecord(NVS_STA_MAC));
-    memcpy(config.StaConfig.mac, mac, sizeof(config.StaConfig.mac));
-    memset(mac, 0, sizeof(mac));
+    memcpy(config.StaConfig.mac, mac, macSize);
     format.stringToIpAddress(ip, this->ReadStringRecord(NVS_STA_IP_ADDRESS));
-    memcpy(config.StaConfig.ip, ip, sizeof(config.StaConfig.ip));
-    memset(ip, 0, sizeof(ip));
+    memcpy(config.StaConfig.ip, ip, ipSize);
     format.stringToIpAddress(ip, this->ReadStringRecord(NVS_STA_SUBNET));
-    memcpy(config.StaConfig.mask, ip, sizeof(config.StaConfig.mask));
-    memset(ip, 0, sizeof(ip));
+    memcpy(config.StaConfig.mask, ip, ipSize);
     format.stringToIpAddress(ip, this->ReadStringRecord(NVS_STA_GATEWAY));
-    memcpy(config.StaConfig.gateway, ip, sizeof(config.StaConfig.gateway));
-    memset(ip, 0, sizeof(ip));
+    memcpy(config.StaConfig.gateway, ip, ipSize);
 
     ESP_LOGI(tag.c_str(), "%s", "Finish Wifi Configuration");
     return config;

@@ -73,6 +73,7 @@ string Formatter::apRecordsList(ApRecordList *apNetworks, uint16_t apQuantity)
 
 void Formatter::stringToIpAddress(uint8_t *_ip, string rawIp)
 {
+    memset(_ip, 0, 4);
     const char *separator = ",";
     char *Ip = (char *)rawIp.c_str();
     char *token = strtok(Ip, separator);
@@ -80,14 +81,25 @@ void Formatter::stringToIpAddress(uint8_t *_ip, string rawIp)
     {
         if (token != NULL)
         {
-            _ip[i] = static_cast<uint8_t>(atoi(token));
-            token = strtok(NULL, separator);
+            int tokenInteger = atoi(token);
+            if (tokenInteger < 256 && tokenInteger >= 0)
+            {
+                _ip[i] = static_cast<uint8_t>(tokenInteger);
+                token = strtok(NULL, separator);
+            }
+            else
+            {
+                uint8_t errorIp[4] = {1, 5, 5, 1};
+                memcpy(_ip, errorIp, 4);
+                break;
+            }
         }
     }
 }
 
 void Formatter::stringToMac(uint8_t *_mac, string rawMac)
 {
+    memset(_mac, 0, 6);
     const char *separator = ":";
     char *mac = (char *)rawMac.c_str();
     char *token = strtok(mac, separator);
@@ -95,8 +107,18 @@ void Formatter::stringToMac(uint8_t *_mac, string rawMac)
     {
         if (token != NULL)
         {
-            _mac[i] = static_cast<uint8_t>(atoi(token));
-            token = strtok(NULL, separator);
+            int tokenInteger = atoi(token);
+            if (tokenInteger < 256 && tokenInteger >= 0)
+            {
+                _mac[i] = static_cast<uint8_t>(tokenInteger);
+                token = strtok(NULL, separator);
+            }
+            else
+            {
+                uint8_t errorMac[6] = {0x00, 0x05, 0xFF, 0xFF, 0x05, 0x00};
+                memcpy(_mac, errorMac, 6);
+                break;
+            }
         }
     }
 }
