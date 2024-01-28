@@ -246,7 +246,7 @@ void TcpService::SetIpAddress(NetworkInterface interface, NetworkIpAddress ipCon
 
         esp_netif_ap = esp_netif_new(&cfg);
         esp_netif_dhcps_stop(esp_netif_ap);
-        esp_netif_set_hostname(esp_netif_ap, "BERDUGO_ESP");
+        esp_netif_set_hostname(esp_netif_ap, ipConfig.ssid.c_str());
         ESP_ERROR_CHECK(esp_netif_set_mac(esp_netif_ap, interfaceConfig.mac));
         esp_netif_set_ip_info(esp_netif_ap, &ipInfo);
         if (ipConfig.dhcpEnlabled)
@@ -273,7 +273,7 @@ void TcpService::SetIpAddress(NetworkInterface interface, NetworkIpAddress ipCon
 
         esp_netif_sta = esp_netif_new(&cfg);
         esp_netif_dhcpc_stop(esp_netif_sta);
-        esp_netif_set_hostname(esp_netif_sta, "BERDUGO");
+        esp_netif_set_hostname(esp_netif_sta, ipConfig.ssid.c_str());
         ESP_ERROR_CHECK(esp_netif_set_mac(esp_netif_sta, interfaceConfig.mac));
         esp_netif_set_ip_info(esp_netif_sta, &ipInfo);
         if (ipConfig.dhcpEnlabled)

@@ -21,7 +21,7 @@ string Formatter::deviceInformation(DeviceInformation deviceInfo)
         {
             JsonObject accessPoint = wifi.createNestedObject("AccessPoint");
             accessPoint["Ip"] = ipAddressToString(deviceInfo.wifiConfig.ApConfig.ip);
-            accessPoint["mask"] = ipAddressToString(deviceInfo.wifiConfig.ApConfig.mask);
+            accessPoint["Mask"] = ipAddressToString(deviceInfo.wifiConfig.ApConfig.mask);
             accessPoint["Gateway"] = ipAddressToString(deviceInfo.wifiConfig.ApConfig.gateway);
             accessPoint["Mac"] = macToString(deviceInfo.wifiConfig.ApConfig.mac, sizeof(deviceInfo.wifiConfig.ApConfig.mac));
             accessPoint["Ssid"] = deviceInfo.wifiConfig.ApConfig.ssid;
@@ -34,9 +34,10 @@ string Formatter::deviceInformation(DeviceInformation deviceInfo)
         {
             JsonObject station = wifi.createNestedObject("Station");
             station["Ip"] = ipAddressToString(deviceInfo.wifiConfig.StaConfig.ip);
-            station["mask"] = ipAddressToString(deviceInfo.wifiConfig.StaConfig.mask);
+            station["Mask"] = ipAddressToString(deviceInfo.wifiConfig.StaConfig.mask);
             station["Gateway"] = ipAddressToString(deviceInfo.wifiConfig.StaConfig.gateway);
             station["Mac"] = macToString(deviceInfo.wifiConfig.StaConfig.mac, sizeof(deviceInfo.wifiConfig.StaConfig.mac));
+            station["RouterMac"] = macToString(deviceInfo.wifiConfig.StaConfig.apMac, sizeof(deviceInfo.wifiConfig.StaConfig.apMac));
             station["Ssid"] = deviceInfo.wifiConfig.StaConfig.ssid;
             station["Auth"] = deviceInfo.wifiConfig.StaConfig.auth;
             station["Mode"] = deviceInfo.wifiConfig.StaConfig.mode;

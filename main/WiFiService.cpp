@@ -108,16 +108,34 @@ void WifiService::SetStationConfig(WifiConfig config)
     this->logString(tag, "Setting Station configuration");
     this->SetIpAddress(NetworkInterface::WifiStation, config.StaConfig);
 
+    uint8_t _ssid[32];
+    uint8_t _pass[64];
+    memset(_ssid, 0, sizeof(_ssid));
+    memset(_pass, 0, sizeof(_pass));
+    memcpy(_ssid, config.ApConfig.ssid.c_str(), sizeof(config.ApConfig.ssid));
+    memcpy(_pass, config.ApConfig.password.c_str(), sizeof(config.ApConfig.password));
+
     wifi_config = {.sta =
                        {
-                           .ssid = {'M', 'A', 'R', 'Y'},
-                           .password = {'3', '2', '7', '2', '7', '7', '4', '7'},
+                           .ssid = {_ssid[0], _ssid[1], _ssid[2], _ssid[3], _ssid[4], _ssid[5], _ssid[6], _ssid[7],
+                                    _ssid[8], _ssid[9], _ssid[10], _ssid[11], _ssid[12], _ssid[13], _ssid[14], _ssid[15],
+                                    _ssid[16], _ssid[17], _ssid[18], _ssid[19], _ssid[20], _ssid[21], _ssid[22], _ssid[23],
+                                    _ssid[24], _ssid[25], _ssid[26], _ssid[27], _ssid[28], _ssid[29], _ssid[30], _ssid[31]},
+                           .password = {_pass[0], _pass[1], _pass[2], _pass[3], _pass[4], _pass[5], _pass[6], _pass[7],
+                                        _pass[8], _pass[9], _pass[10], _pass[11], _pass[12], _pass[13], _pass[14], _pass[15],
+                                        _pass[16], _pass[17], _pass[18], _pass[19], _pass[20], _pass[21], _pass[22], _pass[23],
+                                        _pass[24], _pass[25], _pass[26], _pass[27], _pass[28], _pass[29], _pass[30], _pass[31],
+                                        _pass[32], _pass[33], _pass[34], _pass[35], _pass[36], _pass[37], _pass[38], _pass[39],
+                                        _pass[40], _pass[41], _pass[42], _pass[43], _pass[44], _pass[45], _pass[46], _pass[47],
+                                        _pass[48], _pass[49], _pass[50], _pass[51], _pass[52], _pass[53], _pass[54], _pass[55],
+                                        _pass[56], _pass[56], _pass[58], _pass[50], _pass[60], _pass[61], _pass[62], _pass[63]},
                            .scan_method = WIFI_ALL_CHANNEL_SCAN,
                            .bssid_set = 0,
-                           .bssid = {0x00, 0x01, 0x0A, 0x10, 0x00, 0x02}, /**< MAC address of target AP*/
-                                                                          //    .channel = 0,
-                                                                          //    .listen_interval = 3,
-                                                                          //    .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
+                           .bssid = {config.StaConfig.apMac[0], config.StaConfig.apMac[1], config.StaConfig.apMac[2],
+                                     config.StaConfig.apMac[3], config.StaConfig.apMac[4], config.StaConfig.apMac[5]}, /**< MAC address of target AP*/
+                           //    .channel = 0,
+                           //    .listen_interval = 3,
+                           //    .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
                            .threshold = (wifi_scan_threshold_t){.rssi = 99, .authmode = WIFI_AUTH_WPA2_PSK},
                            //    .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
                            //    .rm_enabled = (uint32_t)1,
@@ -175,13 +193,30 @@ void WifiService::SetApConfig(WifiConfig config)
     this->logString(tag, "Setting Access Point configuration");
     this->SetIpAddress(NetworkInterface::WifiAp, config.ApConfig);
 
+    uint8_t _ssid[32];
+    uint8_t _pass[64];
+    memset(_ssid, 0, sizeof(_ssid));
+    memset(_pass, 0, sizeof(_pass));
+    memcpy(_ssid, config.ApConfig.ssid.c_str(), sizeof(config.ApConfig.ssid));
+    memcpy(_pass, config.ApConfig.password.c_str(), sizeof(config.ApConfig.password));
+
     wifi_config = {.ap =
                        {
-                           .ssid = {'B', 'E', 'R', 'D', 'U', 'G', 'O', '_', 'E', 'S', 'P'},
-                           .password = {'1', '2', '3', '4', '5', '6', '7', '8', '9'},
-                           .ssid_len = sizeof("BERDUGO_ESP") - 1,
+                           .ssid = {_ssid[0], _ssid[1], _ssid[2], _ssid[3], _ssid[4], _ssid[5], _ssid[6], _ssid[7],
+                                    _ssid[8], _ssid[9], _ssid[10], _ssid[11], _ssid[12], _ssid[13], _ssid[14], _ssid[15],
+                                    _ssid[16], _ssid[17], _ssid[18], _ssid[19], _ssid[20], _ssid[21], _ssid[22], _ssid[23],
+                                    _ssid[24], _ssid[25], _ssid[26], _ssid[27], _ssid[28], _ssid[29], _ssid[30], _ssid[31]},
+                           .password = {_pass[0], _pass[1], _pass[2], _pass[3], _pass[4], _pass[5], _pass[6], _pass[7],
+                                        _pass[8], _pass[9], _pass[10], _pass[11], _pass[12], _pass[13], _pass[14], _pass[15],
+                                        _pass[16], _pass[17], _pass[18], _pass[19], _pass[20], _pass[21], _pass[22], _pass[23],
+                                        _pass[24], _pass[25], _pass[26], _pass[27], _pass[28], _pass[29], _pass[30], _pass[31],
+                                        _pass[32], _pass[33], _pass[34], _pass[35], _pass[36], _pass[37], _pass[38], _pass[39],
+                                        _pass[40], _pass[41], _pass[42], _pass[43], _pass[44], _pass[45], _pass[46], _pass[47],
+                                        _pass[48], _pass[49], _pass[50], _pass[51], _pass[52], _pass[53], _pass[54], _pass[55],
+                                        _pass[56], _pass[56], _pass[58], _pass[50], _pass[60], _pass[61], _pass[62], _pass[63]},
+                           .ssid_len = (uint8_t)strlen((char *)_ssid),
                            //    .channel = (uint8_t)10,
-                           .authmode = WIFI_AUTH_WPA2_PSK,
+                           .authmode = (wifi_auth_mode_t)config.ApConfig.auth,
                            .ssid_hidden = 0,
                            .max_connection = (uint8_t)10,
                            .beacon_interval = 100,

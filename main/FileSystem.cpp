@@ -20,10 +20,10 @@ FileSystem::FileSystem(/* args */)
 void FileSystem::SetDefaultValues()
 {
     this->FormatPartition();
-    uint8_t mac[6] = {0x00, 0x01, 0xA0, 0x10, 0x00, 0x01};
-    uint8_t ipAddress[4] = {192, 168, 0, 1};
-    uint8_t subnet[4] = {255, 255, 255, 0};
-    uint8_t gateway[4] = {192, 168, 0, 1};
+    uint8_t mac[6] = {0x00, 0x01, 0xA0, 0x10, 0x00, 0x01}; //Byte[0] can't be 0x1A
+    uint8_t ipAddress[4] = {130, 100, 1, 1};
+    uint8_t subnet[4] = {255, 255, 0, 0};
+    uint8_t gateway[4] = {130, 100, 1, 1};
     Formatter format;
 
     this->WriteBooleanRecord(NVS_UART2_EN, true);
@@ -44,6 +44,7 @@ void FileSystem::SetDefaultValues()
     this->WriteStringRecord(NVS_STA_SSID, "");
     this->WriteStringRecord(NVS_STA_PASSWORD, "");
     this->WriteUint8tRecord(NVS_STA_AUTH_MODE, wifi_auth_mode_t::WIFI_AUTH_OPEN);
+    this->WriteStringRecord(NVS_STA_TARGET_MAC, "");
     this->WriteStringRecord(NVS_STA_MAC, "");
     this->WriteStringRecord(NVS_STA_IP_ADDRESS, "");
     this->WriteStringRecord(NVS_STA_SUBNET, "");
@@ -100,6 +101,8 @@ WifiConfig FileSystem::ReadWifiConfig()
     ESP_LOGI(tag.c_str(), "%s", "Reading Sta ipAddress");
     format.stringToMac(mac, this->ReadStringRecord(NVS_STA_MAC));
     memcpy(config.StaConfig.mac, mac, macSize);
+    format.stringToMac(mac, this->ReadStringRecord(NVS_STA_TARGET_MAC));
+    memcpy(config.StaConfig.apMac, mac, macSize);
     format.stringToIpAddress(ip, this->ReadStringRecord(NVS_STA_IP_ADDRESS));
     memcpy(config.StaConfig.ip, ip, ipSize);
     format.stringToIpAddress(ip, this->ReadStringRecord(NVS_STA_SUBNET));
@@ -198,7 +201,7 @@ bool FileSystem::Open(string key, nvs_open_mode_t openMode)
 {
     if (nvs_open(key.c_str(), openMode, &handle) == ESP_OK)
         return true;
-    ESP_LOGI(tag.c_str(), "Failed at Open: '%s' ", key.c_str());
+    ESP_LOGE(tag.c_str(), "Failed at Open: '%s' ", key.c_str());
     return false;
 }
 

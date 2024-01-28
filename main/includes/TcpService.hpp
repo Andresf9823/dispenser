@@ -35,6 +35,7 @@ typedef struct _NetworkIpAddress
     uint8_t auth;
     uint8_t mode;
     uint8_t mac[6];
+    uint8_t apMac[6];
     uint8_t ip[4];
     uint8_t mask[4];
     uint8_t gateway[4];
