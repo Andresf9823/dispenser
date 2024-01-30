@@ -1,6 +1,6 @@
 #include "WiFiService.hpp"
 
-WifiService::WifiService(/* args */) // @suppress("Class members should be properly initialized")
+WifiService::WifiService()
 {
 }
 
@@ -114,6 +114,7 @@ void WifiService::SetStationConfig(WifiConfig config)
     memset(_pass, 0, sizeof(_pass));
     memcpy(_ssid, config.ApConfig.ssid.c_str(), sizeof(config.ApConfig.ssid));
     memcpy(_pass, config.ApConfig.password.c_str(), sizeof(config.ApConfig.password));
+    this->StaPassword = string((const char *)_pass);
 
     wifi_config = {.sta =
                        {
@@ -136,7 +137,7 @@ void WifiService::SetStationConfig(WifiConfig config)
                            //    .channel = 0,
                            //    .listen_interval = 3,
                            //    .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
-                           .threshold = (wifi_scan_threshold_t){.rssi = 99, .authmode = WIFI_AUTH_WPA2_PSK},
+                           .threshold = (wifi_scan_threshold_t){.rssi = 99, .authmode = (wifi_auth_mode_t)config.StaConfig.auth},
                            //    .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
                            //    .rm_enabled = (uint32_t)1,
                            //    .btm_enabled = (uint32_t)1,
@@ -149,6 +150,7 @@ void WifiService::SetStationConfig(WifiConfig config)
                            //    .sae_pwe_h2e = WPA3_SAE_PWE_UNSPECIFIED,
                            //    .failure_retry_cnt = 5,
                        }};
+    this->MacSafeValidator(WIFI_IF_STA, config.StaConfig.mac);
     esp_wifi_set_mac(WIFI_IF_STA, config.StaConfig.mac);
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
 }
@@ -178,7 +180,7 @@ NetworkIpAddress WifiService::GetStaConfig()
         station.ssid = (const char *)&ap.ssid;
         station.auth = ap.authmode;
         station.mode = WIFI_MODE_STA;
-        station.password = "NULL";
+        station.password = this->StaPassword;
         memcpy(station.mac, ap.bssid, sizeof(ap.bssid));
         memcpy(station.ip, &ipInfo.ip, sizeof(ipInfo.ip));
         memcpy(station.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
@@ -199,6 +201,8 @@ void WifiService::SetApConfig(WifiConfig config)
     memset(_pass, 0, sizeof(_pass));
     memcpy(_ssid, config.ApConfig.ssid.c_str(), sizeof(config.ApConfig.ssid));
     memcpy(_pass, config.ApConfig.password.c_str(), sizeof(config.ApConfig.password));
+    this->ApPassword = string((const char *)_pass);
+    this->ApAuthenticationMode = config.ApConfig.auth;
 
     wifi_config = {.ap =
                        {
@@ -216,7 +220,7 @@ void WifiService::SetApConfig(WifiConfig config)
                                         _pass[56], _pass[56], _pass[58], _pass[50], _pass[60], _pass[61], _pass[62], _pass[63]},
                            .ssid_len = (uint8_t)strlen((char *)_ssid),
                            //    .channel = (uint8_t)10,
-                           .authmode = (wifi_auth_mode_t)config.ApConfig.auth,
+                           .authmode = (wifi_auth_mode_t)this->ApAuthenticationMode,
                            .ssid_hidden = 0,
                            .max_connection = (uint8_t)10,
                            .beacon_interval = 100,
@@ -224,6 +228,7 @@ void WifiService::SetApConfig(WifiConfig config)
                            //    .ftm_responder = 1,
                            //    .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
                        }};
+    this->MacSafeValidator(WIFI_IF_AP, config.ApConfig.mac);
     esp_wifi_set_mac(WIFI_IF_AP, config.ApConfig.mac);
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
 }
@@ -240,9 +245,9 @@ NetworkIpAddress WifiService::GetApConfig()
     esp_netif_get_mac(esp_netif_ap, mac);
 
     apConfig.ssid = string(hostName);
-    apConfig.auth = WIFI_AUTH_WPA2_PSK;
+    apConfig.auth = this->ApAuthenticationMode;
     apConfig.mode = WIFI_MODE_AP;
-    apConfig.password = esp_netif_get_ifkey(esp_netif_ap);
+    apConfig.password = this->ApPassword;
 
     memcpy(apConfig.mac, mac, sizeof(mac));
     memcpy(apConfig.ip, &ipInfo.ip, sizeof(ipInfo.ip));
@@ -314,6 +319,22 @@ uint16_t WifiService::ScanWifiNetworks(ApRecordList *apRecords)
         apRecords[i].authMode = apRecordsScanned[i].authmode;
     }
     return numberOfApScanned;
+}
+
+bool WifiService::MacSafeValidator(wifi_interface_t interface, uint8_t *mac)
+{
+    if ((mac[0] & (char)0x01) == 0x01)
+    {
+        mac[0] = DEFAULT_WIFI_MAC_0;
+        mac[1] = DEFAULT_WIFI_MAC_1;
+        mac[2] = DEFAULT_WIFI_MAC_2;
+        mac[3] = DEFAULT_WIFI_MAC_3;
+        mac[4] = DEFAULT_WIFI_MAC_4;
+        mac[5] = (interface == WIFI_IF_AP ? 0x01 : 0x02);
+        logString(tag, "Mac[0] byte error, setting defult Mac");
+        return false;
+    }
+    return true;
 }
 
 WifiConfig WifiService::GetConfig()

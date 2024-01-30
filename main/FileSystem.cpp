@@ -20,10 +20,10 @@ FileSystem::FileSystem(/* args */)
 void FileSystem::SetDefaultValues()
 {
     this->FormatPartition();
-    uint8_t mac[6] = {0x00, 0x01, 0xA0, 0x10, 0x00, 0x01}; //Byte[0] can't be 0x1A
-    uint8_t ipAddress[4] = {130, 100, 1, 1};
-    uint8_t subnet[4] = {255, 255, 0, 0};
-    uint8_t gateway[4] = {130, 100, 1, 1};
+    uint8_t mac[6] = {DEFAULT_WIFI_MAC_0, DEFAULT_WIFI_MAC_1, DEFAULT_WIFI_MAC_2, DEFAULT_WIFI_MAC_3, DEFAULT_WIFI_MAC_4, DEFAULT_WIFI_MAC_5};
+    uint8_t ipAddress[4] = {192, 168, 0, 1};
+    uint8_t subnet[4] = {255, 255, 255, 0};
+    uint8_t gateway[4] = {192, 168, 0, 1};
     Formatter format;
 
     this->WriteBooleanRecord(NVS_UART2_EN, true);
@@ -133,6 +133,7 @@ bool FileSystem::WriteStringRecord(string _key, string record)
     if (this->Open(_key, NVS_READWRITE))
     {
         writed = this->ErrorCheck(nvs_set_str(handle, key, record.c_str()), _key);
+        nvs_commit(handle);
         nvs_close(handle);
         return writed;
     }
@@ -167,12 +168,14 @@ bool FileSystem::WriteUint8tRecord(string _key, uint8_t record)
     if (this->Open(_key, NVS_READWRITE))
     {
         writed = this->ErrorCheck(nvs_set_u8(handle, key, record), _key);
+        nvs_commit(handle);
         nvs_close(handle);
         return writed;
     }
     ESP_LOGE(tag.c_str(), "Failed writing  uint32: '%s'", key);
     return false;
 }
+
 uint32_t FileSystem::ReadUint32tRecord(string _key)
 {
     uint32_t value;
@@ -190,6 +193,7 @@ bool FileSystem::WriteUint32tRecord(string _key, uint32_t record)
     if (this->Open(_key, NVS_READWRITE))
     {
         writed = this->ErrorCheck(nvs_set_u32(handle, key, record), _key);
+        nvs_commit(handle);
         nvs_close(handle);
         return writed;
     }
@@ -199,7 +203,7 @@ bool FileSystem::WriteUint32tRecord(string _key, uint32_t record)
 
 bool FileSystem::Open(string key, nvs_open_mode_t openMode)
 {
-    if (nvs_open(key.c_str(), openMode, &handle) == ESP_OK)
+    if (this->ErrorCheck(nvs_open(key.c_str(), openMode, &handle), key))
         return true;
     ESP_LOGE(tag.c_str(), "Failed at Open: '%s' ", key.c_str());
     return false;
@@ -229,7 +233,7 @@ bool FileSystem::ErrorCheck(esp_err_t err, string _key)
         ESP_LOGE(tag.c_str(), "The storage driver of the key '%s' is not initialized", key);
         break;
     case ESP_ERR_NVS_INVALID_NAME:
-        ESP_LOGE(tag.c_str(), "The key's string value  '%s' is invalid", key);
+        ESP_LOGE(tag.c_str(), "The key's string value  '%s' is invalid, size must be less than 15, size: %d", key, strlen(key));
         break;
     case ESP_ERR_NO_MEM:
         ESP_LOGE(tag.c_str(), "Memory could not be allocated for key's string value  '%s' ", key);

@@ -76,24 +76,15 @@ void Formatter::stringToIpAddress(uint8_t *_ip, string rawIp)
 {
     memset(_ip, 0, 4);
     const char *separator = ",";
-    char *Ip = (char *)rawIp.c_str();
-    char *token = strtok(Ip, separator);
+    char *ip = (char *)rawIp.c_str();
+    strlwr(ip);
+    const char *token = strtok(ip, separator);
     for (uint8_t i = 0; i < 4; i++)
     {
         if (token != NULL)
         {
-            int tokenInteger = atoi(token);
-            if (tokenInteger < 256 && tokenInteger >= 0)
-            {
-                _ip[i] = static_cast<uint8_t>(tokenInteger);
-                token = strtok(NULL, separator);
-            }
-            else
-            {
-                uint8_t errorIp[4] = {1, 5, 5, 1};
-                memcpy(_ip, errorIp, 4);
-                break;
-            }
+            _ip[i] = static_cast<uint8_t>(atoi(token)) & 0xFF;
+            token = strtok(NULL, separator);
         }
     }
 }
@@ -103,23 +94,16 @@ void Formatter::stringToMac(uint8_t *_mac, string rawMac)
     memset(_mac, 0, 6);
     const char *separator = ":";
     char *mac = (char *)rawMac.c_str();
-    char *token = strtok(mac, separator);
+    const char *token = strtok(mac, separator);
+
     for (uint8_t i = 0; i < 6; i++)
     {
         if (token != NULL)
         {
-            int tokenInteger = atoi(token);
-            if (tokenInteger < 256 && tokenInteger >= 0)
-            {
-                _mac[i] = static_cast<uint8_t>(tokenInteger);
-                token = strtok(NULL, separator);
-            }
-            else
-            {
-                uint8_t errorMac[6] = {0x00, 0x05, 0xFF, 0xFF, 0x05, 0x00};
-                memcpy(_mac, errorMac, 6);
-                break;
-            }
+            /*Cast uint8_t from const char[].
+            Base must be 16 becasuse type char uses 2 uint8_t or bytes*/
+            _mac[i] = static_cast<uint8_t>(strtoul(token, nullptr, 16)) & 0xFF;
+            token = strtok(NULL, separator);
         }
     }
 }

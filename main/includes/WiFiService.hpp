@@ -10,6 +10,13 @@
 
 #define MAXIMUM_SIZE_OF_SCAN_LIST 10
 
+#define DEFAULT_WIFI_MAC_0 0x00
+#define DEFAULT_WIFI_MAC_1 0x01
+#define DEFAULT_WIFI_MAC_2 0x0A
+#define DEFAULT_WIFI_MAC_3 0xA0
+#define DEFAULT_WIFI_MAC_4 0x10
+#define DEFAULT_WIFI_MAC_5 0x00
+
 typedef enum _WiFiMode
 {
 	Unkown,
@@ -37,9 +44,13 @@ class WifiService : public TcpService
 {
 private:
 	static constexpr string tag = "WIFI SERVICE";
+	uint8_t ApAuthenticationMode;
+	string ApPassword;
+	string StaPassword;
 	wifi_config_t wifi_config;
 	void SetApConfig(WifiConfig config);
 	void SetStationConfig(WifiConfig config);
+	bool MacSafeValidator(wifi_interface_t interface, uint8_t *mac);
 	NetworkIpAddress GetApConfig();
 	NetworkIpAddress GetStaConfig();
 	static wifi_config_t defaultWifiConfig;
