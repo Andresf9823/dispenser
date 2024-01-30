@@ -72,6 +72,22 @@ string Formatter::apRecordsList(ApRecordList *apNetworks, uint16_t apQuantity)
     return docString;
 }
 
+string Formatter::reportComandResult(CommandResult result)
+{
+    string docString;
+    DynamicJsonDocument doc(TCP_TX_BUFFER_SIZE);
+
+    doc["Id"] = result.command;
+    doc["IdDevice"] = result.deviceId;
+    doc["Status"] = result.status;
+    JsonObject data = doc.createNestedObject("Data");
+    data["Message"] = result.message;
+
+    serializeJson(doc, docString);
+    logString(tag, docString);
+    return docString;
+}
+
 void Formatter::stringToIpAddress(uint8_t *_ip, string rawIp)
 {
     memset(_ip, 0, 4);

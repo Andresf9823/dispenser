@@ -10,3 +10,11 @@ typedef struct _DeviceInformation
     WifiConfig wifiConfig;
 
 } DeviceInformation;
+
+typedef struct _CommandResult
+{
+    uint32_t deviceId;
+    ProtocolCommand command;
+    bool status;
+    string message;
+} CommandResult;

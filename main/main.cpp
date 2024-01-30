@@ -56,24 +56,38 @@ void SendDeviceInfo()
 
 void SetDefaultMemoryValues()
 {
+
+	CommandResult result;
+	result.command = ProtocolCommand::setDefaultMemoryValues;
+	result.deviceId = File->ReadUint32tRecord(NVS_DEVICE_ID);
+	result.status = true;
+	result.message = "Default values loaded, please restart system";
 	File->SetDefaultValues();
+	Wifi->SendTcpMessage(Format->reportComandResult(result));
 }
 
 void RestartSystem()
 {
-	logString(tag, "RESTARTING SYSTEM IN 3 SECONDS");
+	CommandResult result;
+	result.command = ProtocolCommand::restartSystem;
+	result.deviceId = File->ReadUint32tRecord(NVS_DEVICE_ID);
+	result.status = true;
+	result.message = "RESTARTING SYSTEM IN 3 SECONDS";
+	logString(tag, result.message);
+	Wifi->SendTcpMessage(Format->reportComandResult(result));
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		logString(tag, ".");
 		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
+	Wifi->SendTcpMessage("Restarting");
 	esp_restart();
 }
 
 void initObjects()
 {
 	File = new FileSystem();
-	
+
 	Uart = new Uarts();
 	Uart->logString = logString;
 	Uart->logDword = logDword;
