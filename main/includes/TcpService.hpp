@@ -3,7 +3,6 @@
 
 #include <GlobalDefines.hpp>
 #include <freertos/FreeRTOS.h>
-#include <freertos/freertos.h>
 #include "freertos/event_groups.h"
 #include <freertos/task.h>
 #include <freertos/timers.h>
@@ -59,7 +58,7 @@ private:
     static constexpr string tag = "TCP";
     static bool isValidFrame(char *frame, uint len);
     static void serverTask(void *pvParameters);
-    static void do_retransmit(const int sock);
+    static void DoRetransmit(const int sock);
 
 protected:
     esp_netif_t *esp_netif_ap;

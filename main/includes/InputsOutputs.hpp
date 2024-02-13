@@ -3,7 +3,6 @@
 
 #include <GlobalDefines.hpp>
 #include <freertos/FreeRTOS.h>
-#include <freertos/freertos.h>
 #include <freertos/task.h>
 #include <freertos/timers.h>
 #include <driver/gpio.h>

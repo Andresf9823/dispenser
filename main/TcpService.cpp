@@ -56,7 +56,7 @@ void TcpService::SendTcpMessage(string message)
     }
 }
 
-void TcpService::do_retransmit(const int sock)
+void TcpService::DoRetransmit(const int sock)
 {
     int len;
     char rxTcpbuffer[TCP_RX_BUFFER_SIZE];
@@ -199,7 +199,7 @@ void TcpService::serverTask(void *pvParameters)
         }
         ESP_LOGI("TCP SERVER", "Socket accepted ip address: %s", addr_str);
 
-        do_retransmit(sock);
+        DoRetransmit(sock);
 
         shutdown(sock, 0);
         close(sock);

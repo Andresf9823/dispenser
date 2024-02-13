@@ -24,5 +24,6 @@
         "bitset": "cpp",
         "new": "cpp",
         "*.tcc": "cpp"
-    }
+    },
+    "idf.port": "/dev/ttyUSB0"
 }
