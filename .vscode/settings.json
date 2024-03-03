@@ -23,7 +23,9 @@
         "string_view": "cpp",
         "bitset": "cpp",
         "new": "cpp",
-        "*.tcc": "cpp"
+        "*.tcc": "cpp",
+        "chrono": "cpp",
+        "functional": "cpp"
     },
     "idf.port": "/dev/ttyUSB0"
 }

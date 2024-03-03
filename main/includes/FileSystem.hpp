@@ -26,6 +26,7 @@ public:
     uint8_t ReadUint8tRecord(string key);
     uint32_t ReadUint32tRecord(string key);
     WifiConfig ReadWifiConfig();
+    ApiConfig GetApiConfig();
 
     bool WriteStringRecord(string _key, string record);
     bool WriteBooleanRecord(string _key, bool record);

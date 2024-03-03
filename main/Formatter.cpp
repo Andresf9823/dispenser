@@ -28,6 +28,9 @@ string Formatter::deviceInformation(DeviceInformation deviceInfo)
             accessPoint["Auth"] = deviceInfo.wifiConfig.ApConfig.auth;
             accessPoint["Mode"] = deviceInfo.wifiConfig.ApConfig.mode;
             accessPoint["Pass"] = deviceInfo.wifiConfig.ApConfig.password;
+
+            JsonObject api = accessPoint.createNestedObject("Api");
+            api["Host"] = deviceInfo.WifiApiClient.host;
         }
 
         if (deviceInfo.wifiConfig.mode == WiFiMode::Station || deviceInfo.wifiConfig.mode == WiFiMode::ApStation)
@@ -42,6 +45,9 @@ string Formatter::deviceInformation(DeviceInformation deviceInfo)
             station["Auth"] = deviceInfo.wifiConfig.StaConfig.auth;
             station["Mode"] = deviceInfo.wifiConfig.StaConfig.mode;
             station["Pass"] = deviceInfo.wifiConfig.StaConfig.password;
+
+            JsonObject api = station.createNestedObject("Api");
+            api["Host"] = deviceInfo.WifiApiClient.host;
         }
     }
 

@@ -7,6 +7,7 @@ idf_component_register(
     Formatter.cpp
     WiFiService.cpp 
     TcpService.cpp
+    WebApiConsumer.cpp
     InputsOutputs.cpp  
     FileSystem.cpp
     main.cpp       		 # list the source files of this component

@@ -7,6 +7,7 @@
 #include <nvs_flash.h>
 #include <esp_wifi.h>
 #include <ArduinoJson-v6.21.3.h>
+#include <WebApiConsumer.hpp>
 
 #define MAXIMUM_SIZE_OF_SCAN_LIST 10
 
@@ -58,6 +59,7 @@ private:
 
 public:
 	WifiService();
+	WebApiConsumer *ApiSta;
 	bool InitWifiService(WifiConfig config);
 	uint16_t ScanWifiNetworks(ApRecordList *apRecords);
 	WifiConfig GetConfig();

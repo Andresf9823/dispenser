@@ -50,6 +50,7 @@ void FileSystem::SetDefaultValues()
     this->WriteStringRecord(NVS_STA_SUBNET, "");
     this->WriteStringRecord(NVS_STA_GATEWAY, "");
     this->WriteBooleanRecord(NVS_STA_DHCP_ENABLE, true);
+    this->WriteStringRecord(NVS_STA_API_HOST, "");
 
     ESP_LOGI(tag.c_str(), "%s", "FINSIHED");
 }
@@ -111,6 +112,14 @@ WifiConfig FileSystem::ReadWifiConfig()
     memcpy(config.StaConfig.gateway, ip, ipSize);
 
     ESP_LOGI(tag.c_str(), "%s", "Finish Wifi Configuration");
+    return config;
+}
+
+ApiConfig FileSystem::GetApiConfig()
+{
+    ApiConfig config;
+    ESP_LOGI(tag.c_str(), "%s", "Reading Sta Api configuration");
+    config.host = this->ReadStringRecord(NVS_STA_API_HOST);
     return config;
 }
 

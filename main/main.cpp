@@ -44,19 +44,12 @@ void SendDeviceInfo()
 	deviceInfo.deviceId = File->ReadUint32tRecord(NVS_DEVICE_ID);
 	deviceInfo.versionApp = VERSION_APP;
 	deviceInfo.wifiConfig = Wifi->GetConfig();
-	/*
-		Send a Json by TCP with this information:
-
-		WebServices ->suscribed ->IP
-		WebServices ->suscribed ->PORT
-		WebServices ->suscribed ->URL's Service
-	*/
+	deviceInfo.WifiApiClient = Wifi->ApiSta->GetConfig();
 	Wifi->SendTcpMessage(Format->deviceInformation(deviceInfo));
 }
 
 void SetDefaultMemoryValues()
 {
-
 	CommandResult result;
 	result.command = ProtocolCommand::setDefaultMemoryValues;
 	result.deviceId = File->ReadUint32tRecord(NVS_DEVICE_ID);
@@ -115,7 +108,14 @@ void initObjects()
 	Wifi->SendWifiApRecordsScanned = SendWifiApRecordsScanned;
 	Wifi->SetDefaultMemoryValues = SetDefaultMemoryValues;
 
-	Wifi->InitWifiService(File->ReadWifiConfig());
+	WifiConfig wifiConfig = File->ReadWifiConfig();
+	if (Wifi->InitWifiService(wifiConfig))
+	{
+		if (wifiConfig.mode != WiFiMode::Ap)
+		{
+			Wifi->ApiSta = new WebApiConsumer(File->ReadStringRecord(NVS_STA_API_HOST));
+		}
+	}
 }
 
 extern "C" void app_main(void)

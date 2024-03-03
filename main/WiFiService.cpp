@@ -141,7 +141,7 @@ void WifiService::SetStationConfig(WifiConfig config)
                            //    .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
                            //    .rm_enabled = (uint32_t)1,
                            //    .btm_enabled = (uint32_t)1,
-                           //    .mbo_enabled = (uint32_t)1,
+                           //    .mbo_enabled = (uint32_t)1,client/
                            //    //		.bo_enabled = (uint32_t)1,
                            //    .ft_enabled = (uint32_t)1,
                            //    .owe_enabled = (uint32_t)1,
