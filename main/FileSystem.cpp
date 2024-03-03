@@ -30,7 +30,7 @@ void FileSystem::SetDefaultValues()
     ESP_LOGI(tag.c_str(), "%s", "WRITING INFO");
 
     this->WriteUint32tRecord(NVS_DEVICE_ID, 1234091869);
-    this->WriteUint8tRecord(NVS_WIFI_MODE, WiFiMode::Ap);
+    this->WriteUint8tRecord(NVS_WIFI_MODE, WiFiMode::ApStation);
 
     this->WriteStringRecord(NVS_AP_SSID, "BERDUGO_ESP");
     this->WriteStringRecord(NVS_AP_PASSWORD, "123456789");

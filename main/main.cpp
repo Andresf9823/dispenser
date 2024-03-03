@@ -59,6 +59,10 @@ void SetDefaultMemoryValues()
 	Wifi->SendTcpMessage(Format->reportComandResult(result));
 }
 
+void SaveWifiApRecord(){
+
+}
+
 void RestartSystem()
 {
 	CommandResult result;
@@ -106,6 +110,7 @@ void initObjects()
 	Wifi->RestartSystem = RestartSystem;
 	Wifi->SendDeviceInfo = SendDeviceInfo;
 	Wifi->SendWifiApRecordsScanned = SendWifiApRecordsScanned;
+	Wifi->SaveWifiApRecord = SaveWifiApRecord;
 	Wifi->SetDefaultMemoryValues = SetDefaultMemoryValues;
 
 	WifiConfig wifiConfig = File->ReadWifiConfig();

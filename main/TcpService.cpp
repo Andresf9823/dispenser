@@ -22,6 +22,9 @@ void TcpService::TcpAppStack()
         case ProtocolCommand::setDefaultMemoryValues: // 7B 00 7C 0C 7C 7D
             this->SetDefaultMemoryValues();
             break;
+        case ProtocolCommand::saveWifiApRecord:
+            this->SaveWifiApRecord();
+            break;
         default:
             logString(tag, "Invalid Character");
             break;

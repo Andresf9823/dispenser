@@ -24,6 +24,7 @@ typedef enum protocolCommand
     restartSystem = 0x00,
     sendDeviceInfo = 0x0B,
     sendWifiApRecords = 0x1B,
+    saveWifiApRecord = 0x2B,
     setDefaultMemoryValues = 0x0C
 } ProtocolCommand;
 
@@ -77,6 +78,7 @@ public:
     void (*logFloat)(string TAG, double logFloating);
     void (*RestartSystem)(void);
     void (*SendWifiApRecordsScanned)(void);
+    void (*SaveWifiApRecord)(void);
     void (*SetDefaultMemoryValues)(void);
     void (*SendDeviceInfo)(void);
 
