@@ -1,6 +1,6 @@
-#include <FileSystem.hpp>
+#include <domain/database/localstorage/LocalStorage.hpp>
 
-FileSystem::FileSystem(/* args */)
+LocalStorage::LocalStorage(/* args */)
 {
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND)
@@ -17,7 +17,7 @@ FileSystem::FileSystem(/* args */)
     ESP_ERROR_CHECK(err);
 }
 
-void FileSystem::SetDefaultValues()
+void LocalStorage::setDefaultValues()
 {
     this->FormatPartition();
     uint8_t mac[6] = {DEFAULT_WIFI_MAC_0, DEFAULT_WIFI_MAC_1, DEFAULT_WIFI_MAC_2, DEFAULT_WIFI_MAC_3, DEFAULT_WIFI_MAC_4, DEFAULT_WIFI_MAC_5};
@@ -30,7 +30,7 @@ void FileSystem::SetDefaultValues()
     ESP_LOGI(tag.c_str(), "%s", "WRITING INFO");
 
     this->WriteUint32tRecord(NVS_DEVICE_ID, 1234091869);
-    this->WriteUint8tRecord(NVS_WIFI_MODE, WiFiMode::ApStation);
+    // this->WriteUint8tRecord(NVS_WIFI_MODE, WiFiMode::ApStation);
 
     this->WriteStringRecord(NVS_AP_SSID, "BERDUGO_ESP");
     this->WriteStringRecord(NVS_AP_PASSWORD, "123456789");
@@ -44,86 +44,20 @@ void FileSystem::SetDefaultValues()
     this->WriteStringRecord(NVS_STA_SSID, "");
     this->WriteStringRecord(NVS_STA_PASSWORD, "");
     this->WriteUint8tRecord(NVS_STA_AUTH_MODE, wifi_auth_mode_t::WIFI_AUTH_OPEN);
-    this->WriteStringRecord(NVS_STA_TARGET_MAC, "");
-    this->WriteStringRecord(NVS_STA_MAC, "");
+    uint8_t _mac[6] = {0x10, 0x33, 0xC2, 0x75, 0x43 , 0x10};
+    this->WriteStringRecord(NVS_STA_MAC, format.macToString(_mac, sizeof(_mac)));
     this->WriteStringRecord(NVS_STA_IP_ADDRESS, "");
     this->WriteStringRecord(NVS_STA_SUBNET, "");
     this->WriteStringRecord(NVS_STA_GATEWAY, "");
     this->WriteBooleanRecord(NVS_STA_DHCP_ENABLE, true);
+    this->WriteStringRecord(NVS_STA_TARGET_MAC, "");
+    
     this->WriteStringRecord(NVS_STA_API_HOST, "");
 
     ESP_LOGI(tag.c_str(), "%s", "FINSIHED");
 }
 
-WifiConfig FileSystem::ReadWifiConfig()
-{
-    Formatter format;
-    WifiConfig config;
-    uint8_t ip[4];
-    uint8_t mac[6];
-    uint8_t macSize = sizeof(mac);
-    uint8_t ipSize = sizeof(ip);
-
-    memset(config.ApConfig.mac, 0, sizeof(config.ApConfig.mac));
-    memset(config.ApConfig.ip, 0, sizeof(config.ApConfig.ip));
-    memset(config.ApConfig.mask, 0, sizeof(config.ApConfig.mask));
-    memset(config.ApConfig.gateway, 0, sizeof(config.ApConfig.gateway));
-
-    memset(config.StaConfig.mac, 0, sizeof(config.StaConfig.mac));
-    memset(config.StaConfig.ip, 0, sizeof(config.StaConfig.ip));
-    memset(config.StaConfig.mask, 0, sizeof(config.StaConfig.mask));
-    memset(config.StaConfig.gateway, 0, sizeof(config.StaConfig.gateway));
-
-    ESP_LOGI(tag.c_str(), "%s", "Reading Wifi Configuration");
-    config.mode = static_cast<WiFiMode>(this->ReadUint8tRecord(NVS_WIFI_MODE));
-
-    ESP_LOGI(tag.c_str(), "%s", "Reading Ap Configuration");
-    config.ApConfig.auth = static_cast<WiFiMode>(this->ReadUint8tRecord(NVS_AP_AUTH_MODE));
-    config.ApConfig.ssid = this->ReadStringRecord(NVS_AP_SSID);
-    config.ApConfig.password = this->ReadStringRecord(NVS_AP_PASSWORD);
-    config.ApConfig.dhcpEnlabled = this->ReadBooleanRecord(NVS_AP_DHCP_ENABLE);
-
-    ESP_LOGI(tag.c_str(), "%s", "Reading AP ipAddress");
-    format.stringToMac(mac, this->ReadStringRecord(NVS_AP_MAC));
-    memcpy(config.ApConfig.mac, mac, macSize);
-    format.stringToIpAddress(ip, this->ReadStringRecord(NVS_AP_IP_ADDRESS));
-    memcpy(config.ApConfig.ip, ip, ipSize);
-    format.stringToIpAddress(ip, this->ReadStringRecord(NVS_AP_SUBNET));
-    memcpy(config.ApConfig.mask, ip, ipSize);
-    format.stringToIpAddress(ip, this->ReadStringRecord(NVS_AP_GATEWAY));
-    memcpy(config.ApConfig.gateway, ip, ipSize);
-
-    ESP_LOGI(tag.c_str(), "%s", "Reading Sta Configuration");
-    config.StaConfig.auth = static_cast<WiFiMode>(this->ReadUint8tRecord(NVS_STA_AUTH_MODE));
-    config.StaConfig.ssid = this->ReadStringRecord(NVS_STA_SSID);
-    config.StaConfig.password = this->ReadStringRecord(NVS_STA_PASSWORD);
-    config.StaConfig.dhcpEnlabled = this->ReadBooleanRecord(NVS_STA_DHCP_ENABLE);
-
-    ESP_LOGI(tag.c_str(), "%s", "Reading Sta ipAddress");
-    format.stringToMac(mac, this->ReadStringRecord(NVS_STA_MAC));
-    memcpy(config.StaConfig.mac, mac, macSize);
-    format.stringToMac(mac, this->ReadStringRecord(NVS_STA_TARGET_MAC));
-    memcpy(config.StaConfig.apMac, mac, macSize);
-    format.stringToIpAddress(ip, this->ReadStringRecord(NVS_STA_IP_ADDRESS));
-    memcpy(config.StaConfig.ip, ip, ipSize);
-    format.stringToIpAddress(ip, this->ReadStringRecord(NVS_STA_SUBNET));
-    memcpy(config.StaConfig.mask, ip, ipSize);
-    format.stringToIpAddress(ip, this->ReadStringRecord(NVS_STA_GATEWAY));
-    memcpy(config.StaConfig.gateway, ip, ipSize);
-
-    ESP_LOGI(tag.c_str(), "%s", "Finish Wifi Configuration");
-    return config;
-}
-
-ApiConfig FileSystem::GetApiConfig()
-{
-    ApiConfig config;
-    ESP_LOGI(tag.c_str(), "%s", "Reading Sta Api configuration");
-    config.host = this->ReadStringRecord(NVS_STA_API_HOST);
-    return config;
-}
-
-string FileSystem::ReadStringRecord(string _key)
+string LocalStorage::ReadStringRecord(string _key)
 {
     const char *key = _key.c_str();
     char record[50];
@@ -135,7 +69,7 @@ string FileSystem::ReadStringRecord(string _key)
     return string(record);
 }
 
-bool FileSystem::WriteStringRecord(string _key, string record)
+bool LocalStorage::WriteStringRecord(string _key, string record)
 {
     bool writed = false;
     const char *key = _key.c_str();
@@ -150,17 +84,17 @@ bool FileSystem::WriteStringRecord(string _key, string record)
     return false;
 }
 
-bool FileSystem::ReadBooleanRecord(string _key)
+bool LocalStorage::ReadBooleanRecord(string _key)
 {
     return this->ReadUint8tRecord(_key) == 0 ? false : true;
 }
 
-bool FileSystem::WriteBooleanRecord(string _key, bool record)
+bool LocalStorage::WriteBooleanRecord(string _key, bool record)
 {
     return this->WriteUint8tRecord(_key, record);
 }
 
-uint8_t FileSystem::ReadUint8tRecord(string _key)
+uint8_t LocalStorage::ReadUint8tRecord(string _key)
 {
     uint8_t value;
     const char *key = _key.c_str();
@@ -170,7 +104,7 @@ uint8_t FileSystem::ReadUint8tRecord(string _key)
     return value;
 }
 
-bool FileSystem::WriteUint8tRecord(string _key, uint8_t record)
+bool LocalStorage::WriteUint8tRecord(string _key, uint8_t record)
 {
     bool writed = false;
     const char *key = _key.c_str();
@@ -185,7 +119,7 @@ bool FileSystem::WriteUint8tRecord(string _key, uint8_t record)
     return false;
 }
 
-uint32_t FileSystem::ReadUint32tRecord(string _key)
+uint32_t LocalStorage::ReadUint32tRecord(string _key)
 {
     uint32_t value;
     const char *key = _key.c_str();
@@ -195,7 +129,7 @@ uint32_t FileSystem::ReadUint32tRecord(string _key)
     return value;
 }
 
-bool FileSystem::WriteUint32tRecord(string _key, uint32_t record)
+bool LocalStorage::WriteUint32tRecord(string _key, uint32_t record)
 {
     bool writed = false;
     const char *key = _key.c_str();
@@ -210,7 +144,63 @@ bool FileSystem::WriteUint32tRecord(string _key, uint32_t record)
     return false;
 }
 
-bool FileSystem::Open(string key, nvs_open_mode_t openMode)
+void LocalStorage::readWifiConfiguration(vector<WifiConfiguration> *config)
+{
+    config->clear();
+    Formatter format;
+    WifiConfiguration modeConfig;
+    uint8_t ip[4];
+    uint8_t mac[6];
+    uint8_t macSize = sizeof(mac);
+    uint8_t ipSize = sizeof(ip);
+
+    memset(modeConfig.mac, 0, sizeof(modeConfig.mac));
+    memset(modeConfig.ipv4.ip, 0, sizeof(modeConfig.ipv4.ip));
+    memset(modeConfig.ipv4.mask, 0, sizeof(modeConfig.ipv4.mask));
+    memset(modeConfig.ipv4.gateway, 0, sizeof(modeConfig.ipv4.gateway));
+
+    ESP_LOGI(tag.c_str(), "%s", "Reading Wifi Configuration");
+
+    ESP_LOGI(tag.c_str(), "%s", "Reading Ap Configuration");
+    // modeConfig.authentication = static_cast<WiFiMode>(this->ReadUint8tRecord(NVS_AP_AUTH_MODE));
+    modeConfig.authentication = 0;
+    modeConfig.ssid = this->ReadStringRecord(NVS_AP_SSID);
+    modeConfig.password = this->ReadStringRecord(NVS_AP_PASSWORD);
+    modeConfig.dhcpEnabled = this->ReadBooleanRecord(NVS_AP_DHCP_ENABLE);
+
+    format.stringToMac(mac, this->ReadStringRecord(NVS_AP_MAC));
+    memcpy(modeConfig.mac, mac, macSize);
+    format.stringToIpAddress(ip, this->ReadStringRecord(NVS_AP_IP_ADDRESS));
+    memcpy(modeConfig.ipv4.ip, ip, ipSize);
+    format.stringToIpAddress(ip, this->ReadStringRecord(NVS_AP_SUBNET));
+    memcpy(modeConfig.ipv4.mask, ip, ipSize);
+    format.stringToIpAddress(ip, this->ReadStringRecord(NVS_AP_GATEWAY));
+    memcpy(modeConfig.ipv4.gateway, ip, ipSize);
+
+    config->push_back(modeConfig);
+
+    ESP_LOGI(tag.c_str(), "%s", "Reading Sta Configuration");
+    // modeConfig.authentication = static_cast<WiFiMode>(this->ReadUint8tRecord(NVS_STA_AUTH_MODE));
+    modeConfig.authentication =  2;
+    modeConfig.ssid = this->ReadStringRecord(NVS_STA_SSID);
+    modeConfig.password = this->ReadStringRecord(NVS_STA_PASSWORD);
+    modeConfig.dhcpEnabled = this->ReadBooleanRecord(NVS_STA_DHCP_ENABLE);
+
+    format.stringToMac(mac, this->ReadStringRecord(NVS_STA_MAC));
+    memcpy(modeConfig.mac, mac, macSize);
+    format.stringToIpAddress(ip, this->ReadStringRecord(NVS_STA_IP_ADDRESS));
+    memcpy(modeConfig.ipv4.ip, ip, ipSize);
+    format.stringToIpAddress(ip, this->ReadStringRecord(NVS_STA_SUBNET));
+    memcpy(modeConfig.ipv4.mask, ip, ipSize);
+    format.stringToIpAddress(ip, this->ReadStringRecord(NVS_STA_GATEWAY));
+    memcpy(modeConfig.ipv4.gateway, ip, ipSize);
+
+    config->push_back(modeConfig);
+
+    ESP_LOGI(tag.c_str(), "%s", "Finish Wifi Configuration");
+}
+
+bool LocalStorage::Open(string key, nvs_open_mode_t openMode)
 {
     if (this->ErrorCheck(nvs_open(key.c_str(), openMode, &handle), key))
         return true;
@@ -218,7 +208,7 @@ bool FileSystem::Open(string key, nvs_open_mode_t openMode)
     return false;
 }
 
-bool FileSystem::ErrorCheck(esp_err_t err, string _key)
+bool LocalStorage::ErrorCheck(esp_err_t err, string _key)
 {
     const char *key = _key.c_str();
     switch (err)
@@ -260,12 +250,12 @@ bool FileSystem::ErrorCheck(esp_err_t err, string _key)
     return false;
 }
 
-void FileSystem::FormatPartition()
+void LocalStorage::FormatPartition()
 {
     ESP_LOGI(tag.c_str(), "%s", "Fomatting local memory");
     nvs_erase_all(handle);
 }
 
-FileSystem::~FileSystem()
+LocalStorage::~LocalStorage()
 {
 }

@@ -1,26 +1,18 @@
 #include <GlobalDefines.hpp>
-#include <InputsOutputs.hpp>
-#include <UartsFunctions.hpp>
-#include <WiFiService.hpp>
-#include <FileSystem.hpp>
-#include <Formatter.hpp>
-
-using namespace std;
+#include "domain/network/wifi/Wifi.hpp"
+#include "domain/database/localstorage/LocalStorage.hpp"
 
 static string tag = "MAIN";
 
-Uarts *Uart;
-Formatter *Format;
-InputsOutputs *Gpio;
-WifiService *Wifi;
-FileSystem *File;
+Wifi *wifi;
+LocalStorage *localStorage;
 
 void logString(string TAG, string message)
 {
 	ESP_LOGI((const char *)TAG.c_str(), "%s", (unsigned char *)message.c_str());
 }
 
-void logDword(string TAG, int32_t logNumber)
+void logDword(string TAG, int64_t logNumber)
 {
 	logString(TAG, to_string(logNumber));
 }
@@ -29,7 +21,7 @@ void logFloat(string TAG, double logFloating)
 {
 	logString(TAG, to_string(logFloating));
 }
-
+/*
 void SendWifiApRecordsScanned()
 {
 	ApRecordList apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
@@ -59,8 +51,8 @@ void SetDefaultMemoryValues()
 	Wifi->SendTcpMessage(Format->reportComandResult(result));
 }
 
-void SaveWifiApRecord(){
-
+void SaveWifiApRecord()
+{
 }
 
 void RestartSystem()
@@ -81,56 +73,26 @@ void RestartSystem()
 	esp_restart();
 }
 
+*/
 void initObjects()
 {
-	File = new FileSystem();
+	localStorage = new LocalStorage();
+	localStorage->setDefaultValues();
 
-	Uart = new Uarts();
-	Uart->logString = logString;
-	Uart->logDword = logDword;
-	Uart->logFloat = logFloat;
-	if (File->ReadBooleanRecord(NVS_UART2_EN))
-		Uart->UartInitializer(2);
+	wifi = new Wifi();
+	wifi->logString = logString;
+	wifi->logDword = logDword;
+	wifi->logFloat = logFloat;
 
-	Format = new Formatter();
-	Format->logString = logString;
-	Format->logDword = logDword;
-	Format->logFloat = logFloat;
-
-	Gpio = new InputsOutputs();
-	Gpio->logString = logString;
-	Gpio->logDword = logDword;
-	Gpio->logFloat = logFloat;
-	Gpio->InitBlink();
-
-	Wifi = new WifiService();
-	Wifi->logString = logString;
-	Wifi->logDword = logDword;
-	Wifi->logFloat = logFloat;
-	Wifi->RestartSystem = RestartSystem;
-	Wifi->SendDeviceInfo = SendDeviceInfo;
-	Wifi->SendWifiApRecordsScanned = SendWifiApRecordsScanned;
-	Wifi->SaveWifiApRecord = SaveWifiApRecord;
-	Wifi->SetDefaultMemoryValues = SetDefaultMemoryValues;
-
-	WifiConfig wifiConfig = File->ReadWifiConfig();
-	if (Wifi->InitWifiService(wifiConfig))
-	{
-		if (wifiConfig.mode != WiFiMode::Ap)
-		{
-			Wifi->ApiSta = new WebApiConsumer(File->ReadStringRecord(NVS_STA_API_HOST));
-		}
-	}
+	wifi->init(new IWifiModeSta());
 }
 
 extern "C" void app_main(void)
 {
 	logString(tag, "Go project!");
 	initObjects();
-
 	while (true)
 	{
-		Wifi->TcpAppStack();
 		vTaskDelay(1);
 	}
 }

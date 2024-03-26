@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <string>
+#include <vector>
 #include <typeinfo>
 
 /*Version*/
@@ -16,5 +17,7 @@
 /*Memory size*/
 #define KB (1024UL)
 #define MB (KB) * (KB)
+
+using namespace std;
 
 #endif

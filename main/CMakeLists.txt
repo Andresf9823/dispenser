@@ -4,12 +4,25 @@
 idf_component_register(
     SRCS 
     UartsFunctions.cpp
-    Formatter.cpp
-    WiFiService.cpp 
     TcpService.cpp
     WebApiConsumer.cpp
     InputsOutputs.cpp  
-    FileSystem.cpp
+    
+
+    #Network .cpp files
+    source/network/wifi/Wifi.cpp
+    source/network/wifi/modes/WifiModeAp.cpp
+    source/network/wifi/modes/WifiModeSta.cpp
+    source/network/wifi/modes/WifiModeApSta.cpp
+
+    #Network protocols files
+    source/network/protocols/TcpProtocol.cpp
+    source/network/protocols/UdpProtocol.cpp
+
+    #Local Storage files
+    source/database/Formatter.cpp
+    source/database/localstorage/LocalStorage.cpp
+
     main.cpp       		 # list the source files of this component
     INCLUDE_DIRS .       # optional, add here public include directories
     includes
