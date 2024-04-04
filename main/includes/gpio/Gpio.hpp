@@ -21,9 +21,9 @@ private:
 
 public:
 	InputsOutputs();
-	void InitBlink();
+	void initBlink();
 	void (*logString)(string TAG, string message);
-	void (*logDword)(string TAG, int32_t logNumber);
+	void (*logDword)(string TAG, int64_t logNumber);
 	void (*logFloat)(string TAG, double logFloating);
 	~InputsOutputs();
 };

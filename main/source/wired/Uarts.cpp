@@ -1,10 +1,10 @@
-#include <UartsFunctions.hpp>
+#include <wire/Uarts.hpp>
 
 Uarts::Uarts() // @suppress("Class members should be properly initialized")
 {
 }
 
-void Uarts::ScanUart0Rx(void *pvParameters)
+void Uarts::scanUart0Rx(void *pvParameters)
 {
 	uart0Buffer = (uint8_t *)malloc(UART_RX_BUFFER_SIZE);
 	memset(uart0Buffer, 0, UART_RX_BUFFER_SIZE);
@@ -18,7 +18,7 @@ void Uarts::ScanUart0Rx(void *pvParameters)
 	free(uart0Buffer);
 }
 
-void Uarts::ScanUart1Rx(void *pvParameters)
+void Uarts::scanUart1Rx(void *pvParameters)
 {
 	uart1Buffer = (uint8_t *)malloc(UART_RX_BUFFER_SIZE);
 	memset(uart1Buffer, 0, UART_RX_BUFFER_SIZE);
@@ -33,7 +33,7 @@ void Uarts::ScanUart1Rx(void *pvParameters)
 	free(uart1Buffer);
 }
 
-void Uarts::ScanUart2Rx(void *pvParameters)
+void Uarts::scanUart2Rx(void *pvParameters)
 {
 	uart2Buffer = (uint8_t *)malloc(UART_RX_BUFFER_SIZE);
 	memset(uart2Buffer, 0, UART_RX_BUFFER_SIZE);
@@ -48,7 +48,7 @@ void Uarts::ScanUart2Rx(void *pvParameters)
 	free(uart2Buffer);
 }
 
-bool Uarts::UartInitializer(uint8_t uartNumber)
+bool Uarts::uartInitializer(uint8_t uartNumber)
 {
 	if (uartNumber < 3)
 	{
@@ -63,7 +63,7 @@ bool Uarts::UartInitializer(uint8_t uartNumber)
 			uart_driver_install(UART_NUM_0,
 								configMINIMAL_STACK_SIZE, 0, 0,
 								NULL, 0);
-			xTaskCreate(ScanUart0Rx, "UART0", configMINIMAL_STACK_SIZE,
+			xTaskCreate(scanUart0Rx, "UART0", configMINIMAL_STACK_SIZE,
 						NULL, 5, NULL);
 			break;
 		case 1:
@@ -73,7 +73,7 @@ bool Uarts::UartInitializer(uint8_t uartNumber)
 			uart_driver_install(UART_NUM_1,
 								configMINIMAL_STACK_SIZE, 0, 0,
 								NULL, 0);
-			xTaskCreate(ScanUart1Rx, "UART1", configMINIMAL_STACK_SIZE,
+			xTaskCreate(scanUart1Rx, "UART1", configMINIMAL_STACK_SIZE,
 						NULL, 5, NULL);
 			break;
 		case 2:
@@ -83,13 +83,13 @@ bool Uarts::UartInitializer(uint8_t uartNumber)
 			uart_driver_install(UART_NUM_2,
 								configMINIMAL_STACK_SIZE, 0, 0,
 								NULL, 0);
-			xTaskCreate(ScanUart2Rx, "UART2", configMINIMAL_STACK_SIZE,
+			xTaskCreate(scanUart2Rx, "UART2", configMINIMAL_STACK_SIZE,
 						NULL, 5, NULL);
 			break;
 		}
 		return true;
 	}
-	logString(tag, "HW for Uart interface don't exist:");
-	logDword(tag, uartNumber);
+	this->logString(tag, "HW for Uart interface don't exist:");
+	this->logDword(tag, uartNumber);
 	return false;
 }

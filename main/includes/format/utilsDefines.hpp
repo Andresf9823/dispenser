@@ -1,7 +1,7 @@
 #include <GlobalDefines.hpp>
-#include <InputsOutputs.hpp>
-#include <UartsFunctions.hpp>
-#include <WiFiService.hpp>
+#include <gpio/Gpio.hpp>
+#include <wire/Uarts.hpp>
+#include <network/wifi/Wifi.hpp>
 #include <WebApiConsumer.hpp>
 
 typedef struct _DeviceInformation

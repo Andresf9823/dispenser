@@ -1,10 +1,10 @@
-#include "InputsOutputs.hpp"
+#include "gpio/Gpio.hpp"
 
-InputsOutputs::InputsOutputs() // @suppress("Class members should be properly initialized")
+InputsOutputs::InputsOutputs()
 {
 }
 
-void InputsOutputs::InitBlink()
+void InputsOutputs::initBlink()
 {
 
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);

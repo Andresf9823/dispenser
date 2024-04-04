@@ -1,4 +1,4 @@
-#include <Formatter.hpp>
+#include "format/Formatter.hpp"
 
 Formatter::Formatter(/* args */)
 {
@@ -17,33 +17,33 @@ string Formatter::deviceInformation(DeviceInformation deviceInfo)
     if (deviceInfo.wifiConfig.mode != 0)
     {
         JsonObject wifi = doc.createNestedObject("Wifi");
-        if (deviceInfo.wifiConfig.mode == WiFiMode::Ap || deviceInfo.wifiConfig.mode == WiFiMode::ApStation)
+        if (deviceInfo.wifiConfig.mode == WifiMode::Ap || deviceInfo.wifiConfig.mode == WifiMode::ApStation)
         {
             JsonObject accessPoint = wifi.createNestedObject("AccessPoint");
-            accessPoint["Ip"] = ipAddressToString(deviceInfo.wifiConfig.ApConfig.ip);
-            accessPoint["Mask"] = ipAddressToString(deviceInfo.wifiConfig.ApConfig.mask);
-            accessPoint["Gateway"] = ipAddressToString(deviceInfo.wifiConfig.ApConfig.gateway);
+            accessPoint["Ip"] = ipAddressToString(deviceInfo.wifiConfig.ApConfig.ip.ip);
+            accessPoint["Mask"] = ipAddressToString(deviceInfo.wifiConfig.ApConfig.ip.mask);
+            accessPoint["Gateway"] = ipAddressToString(deviceInfo.wifiConfig.ApConfig.ip.gateway);
             accessPoint["Mac"] = macToString(deviceInfo.wifiConfig.ApConfig.mac, sizeof(deviceInfo.wifiConfig.ApConfig.mac));
             accessPoint["Ssid"] = deviceInfo.wifiConfig.ApConfig.ssid;
-            accessPoint["Auth"] = deviceInfo.wifiConfig.ApConfig.auth;
-            accessPoint["Mode"] = deviceInfo.wifiConfig.ApConfig.mode;
+            accessPoint["Auth"] = deviceInfo.wifiConfig.ApConfig.authentication;
+            accessPoint["Mode"] = deviceInfo.wifiConfig.mode;
             accessPoint["Pass"] = deviceInfo.wifiConfig.ApConfig.password;
 
             JsonObject api = accessPoint.createNestedObject("Api");
             api["Host"] = deviceInfo.WifiApiClient.host;
         }
 
-        if (deviceInfo.wifiConfig.mode == WiFiMode::Station || deviceInfo.wifiConfig.mode == WiFiMode::ApStation)
+        if (deviceInfo.wifiConfig.mode == WifiMode::Station || deviceInfo.wifiConfig.mode == WifiMode::ApStation)
         {
             JsonObject station = wifi.createNestedObject("Station");
-            station["Ip"] = ipAddressToString(deviceInfo.wifiConfig.StaConfig.ip);
-            station["Mask"] = ipAddressToString(deviceInfo.wifiConfig.StaConfig.mask);
-            station["Gateway"] = ipAddressToString(deviceInfo.wifiConfig.StaConfig.gateway);
+            station["Ip"] = ipAddressToString(deviceInfo.wifiConfig.StaConfig.ip.ip);
+            station["Mask"] = ipAddressToString(deviceInfo.wifiConfig.StaConfig.ip.mask);
+            station["Gateway"] = ipAddressToString(deviceInfo.wifiConfig.StaConfig.ip.gateway);
             station["Mac"] = macToString(deviceInfo.wifiConfig.StaConfig.mac, sizeof(deviceInfo.wifiConfig.StaConfig.mac));
-            station["RouterMac"] = macToString(deviceInfo.wifiConfig.StaConfig.apMac, sizeof(deviceInfo.wifiConfig.StaConfig.apMac));
+            station["RouterMac"] = macToString(deviceInfo.wifiConfig.StaConfig.targetMac, sizeof(deviceInfo.wifiConfig.StaConfig.targetMac));
             station["Ssid"] = deviceInfo.wifiConfig.StaConfig.ssid;
-            station["Auth"] = deviceInfo.wifiConfig.StaConfig.auth;
-            station["Mode"] = deviceInfo.wifiConfig.StaConfig.mode;
+            station["Auth"] = deviceInfo.wifiConfig.StaConfig.authentication;
+            station["Mode"] = deviceInfo.wifiConfig.mode;
             station["Pass"] = deviceInfo.wifiConfig.StaConfig.password;
 
             JsonObject api = station.createNestedObject("Api");
@@ -52,7 +52,6 @@ string Formatter::deviceInformation(DeviceInformation deviceInfo)
     }
 
     serializeJson(doc, jsonString);
-    logString(tag, jsonString);
     return jsonString;
 }
 
@@ -74,11 +73,10 @@ string Formatter::apRecordsList(ApRecordList *apNetworks, uint16_t apQuantity)
         apItems.add(data);
     }
     serializeJson(doc, docString);
-    logString(tag, docString);
     return docString;
 }
 
-string Formatter::reportComandResult(CommandResult result)
+string Formatter::reportMessageFromCommand(CommandResult result)
 {
     string docString;
     DynamicJsonDocument doc(TCP_TX_BUFFER_SIZE);
@@ -90,7 +88,6 @@ string Formatter::reportComandResult(CommandResult result)
     data["Message"] = result.message;
 
     serializeJson(doc, docString);
-    logString(tag, docString);
     return docString;
 }
 

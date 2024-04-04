@@ -1,5 +1,5 @@
-#ifndef _UARTS_FUNCTIONS_HPP_
-#define _UARTS_FUNCTIONS_HPP_
+#ifndef _UARTS_HPP_
+#define _UARTS_HPP_
 
 #include <GlobalDefines.hpp>
 #include <esp_task_wdt.h>
@@ -31,16 +31,16 @@ class Uarts
 public:
 	Uarts();
 	static constexpr string tag = "UART";
-	bool UartInitializer(uint8_t uartNumber);
+	bool uartInitializer(uint8_t uartNumber);
 	void (*logString)(string TAG, string message);
-	void (*logDword)(string TAG, int32_t logNumber);
+	void (*logDword)(string TAG, int64_t logNumber);
 	void (*logFloat)(string TAG, double logFloating);
 	~Uarts();
 
 private:
-	static void ScanUart0Rx(void *pvParameters);
-	static void ScanUart1Rx(void *pvParameters);
-	static void ScanUart2Rx(void *pvParameters);
+	static void scanUart0Rx(void *pvParameters);
+	static void scanUart1Rx(void *pvParameters);
+	static void scanUart2Rx(void *pvParameters);
 };
 
 #endif

@@ -8,7 +8,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <string>
-#include <typeinfo>
 
 /*Version*/
 #define VERSION_APP "0.0.1"
@@ -16,5 +15,7 @@
 /*Memory size*/
 #define KB (1024UL)
 #define MB (KB) * (KB)
+
+using namespace std;
 
 #endif

@@ -1,10 +1,10 @@
-#include "WiFiService.hpp"
+#include <network/wifi/Wifi.hpp>
 
 WifiService::WifiService()
 {
 }
 
-void WifiService::WifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
+void WifiService::wifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     if (event_base == WIFI_EVENT)
     {
@@ -103,10 +103,87 @@ void WifiService::WifiEventHandler(void *arg, esp_event_base_t event_base, int32
     }
 }
 
-void WifiService::SetStationConfig(WifiConfig config)
+void WifiService::setIpAddress(WifiMode mode, NetworkProperties ipConfig)
+{
+
+    this->logString(tag, "Setting Ip Configuration");
+    esp_netif_ip_info_t ipInfo;
+    esp_netif_inherent_config_t interfaceConfig;
+    esp_netif_config_t cfg;
+
+    IP4_ADDR(&ipInfo.ip, ipConfig.ip.ip[0], ipConfig.ip.ip[1], ipConfig.ip.ip[2], ipConfig.ip.ip[3]);
+    IP4_ADDR(&ipInfo.netmask, ipConfig.ip.mask[0], ipConfig.ip.mask[1], ipConfig.ip.mask[2], ipConfig.ip.mask[3]);
+    IP4_ADDR(&ipInfo.gw, ipConfig.ip.gateway[0], ipConfig.ip.gateway[1], ipConfig.ip.gateway[2], ipConfig.ip.gateway[3]);
+
+    switch (mode)
+    {
+    case WifiMode::Ap:
+        this->logString(tag, "WifiAp");
+        interfaceConfig = {.flags = (esp_netif_flags_t)(ESP_NETIF_IPV4_ONLY_FLAGS(ESP_NETIF_DHCP_SERVER) | ESP_NETIF_FLAG_AUTOUP),
+                           .mac = {ipConfig.mac[0], ipConfig.mac[1], ipConfig.mac[2], ipConfig.mac[3], ipConfig.mac[4], ipConfig.mac[5]},
+                           .ip_info = &ipInfo,
+                           .get_ip_event = 0,
+                           .lost_ip_event = 0,
+                           .if_key = "Access Point",
+                           .if_desc = "ap",
+                           .route_prio = 10,
+                           .bridge_info = NULL};
+
+        cfg = {.base = &interfaceConfig,
+               .driver = NULL,
+               .stack = ESP_NETIF_NETSTACK_DEFAULT_WIFI_AP};
+
+
+        esp_netif_ap = esp_netif_new(&cfg);
+        esp_netif_dhcps_stop(esp_netif_ap);
+        esp_netif_set_hostname(esp_netif_ap, ipConfig.ssid.c_str());
+        ESP_ERROR_CHECK(esp_netif_set_mac(esp_netif_ap, interfaceConfig.mac));
+        esp_netif_set_ip_info(esp_netif_ap, &ipInfo);
+        if (ipConfig.dhcpEnabled)
+            esp_netif_dhcps_start(esp_netif_ap);
+        assert(esp_netif_ap);
+        ESP_ERROR_CHECK(esp_netif_attach_wifi_ap(esp_netif_ap));
+        ESP_ERROR_CHECK(esp_wifi_set_default_wifi_ap_handlers());
+        break;
+    case WifiMode::Station:
+        this->logString(tag, "WifiStation");
+        interfaceConfig = {.flags = (esp_netif_flags_t)(ESP_NETIF_IPV4_ONLY_FLAGS(ESP_NETIF_DHCP_CLIENT) | ESP_NETIF_DEFAULT_ARP_FLAGS | ESP_NETIF_DEFAULT_MLDV6_REPORT_FLAGS | ESP_NETIF_FLAG_EVENT_IP_MODIFIED),
+                           .mac = {ipConfig.mac[0], ipConfig.mac[1], ipConfig.mac[2], ipConfig.mac[3], ipConfig.mac[4], ipConfig.mac[5]},
+                           .ip_info = &ipInfo,
+                           .get_ip_event = IP_EVENT_STA_GOT_IP,
+                           .lost_ip_event = IP_EVENT_STA_LOST_IP,
+                           .if_key = "Station",
+                           .if_desc = "sta",
+                           .route_prio = 100,
+                           .bridge_info = NULL};
+
+        cfg = {.base = &interfaceConfig,
+               .driver = NULL,
+               .stack = ESP_NETIF_NETSTACK_DEFAULT_WIFI_STA};
+
+        esp_netif_sta = esp_netif_new(&cfg);
+        esp_netif_dhcpc_stop(esp_netif_sta);
+        esp_netif_set_hostname(esp_netif_sta, ipConfig.ssid.c_str());
+        ESP_ERROR_CHECK(esp_netif_set_mac(esp_netif_sta, interfaceConfig.mac));
+        esp_netif_set_ip_info(esp_netif_sta, &ipInfo);
+        if (ipConfig.dhcpEnabled)
+            esp_netif_dhcpc_start(esp_netif_sta);
+        assert(esp_netif_sta);
+        ESP_ERROR_CHECK(esp_netif_attach_wifi_station(esp_netif_sta));
+        ESP_ERROR_CHECK(esp_wifi_set_default_wifi_sta_handlers());
+        break;
+    default:
+        return;
+        break;
+    }
+
+    this->logString(tag, "Finish Ip Configuration");
+}
+
+void WifiService::setStationConfig(WifiConfig config)
 {
     this->logString(tag, "Setting Station configuration");
-    this->SetIpAddress(NetworkInterface::WifiStation, config.StaConfig);
+    this->setIpAddress(WifiMode::Station, config.StaConfig);
 
     uint8_t _ssid[32];
     uint8_t _pass[64];
@@ -132,12 +209,12 @@ void WifiService::SetStationConfig(WifiConfig config)
                                         _pass[56], _pass[56], _pass[58], _pass[50], _pass[60], _pass[61], _pass[62], _pass[63]},
                            .scan_method = WIFI_ALL_CHANNEL_SCAN,
                            .bssid_set = 0,
-                           .bssid = {config.StaConfig.apMac[0], config.StaConfig.apMac[1], config.StaConfig.apMac[2],
-                                     config.StaConfig.apMac[3], config.StaConfig.apMac[4], config.StaConfig.apMac[5]}, /**< MAC address of target AP*/
+                           .bssid = {config.StaConfig.targetMac[0], config.StaConfig.targetMac[1], config.StaConfig.targetMac[2],
+                                     config.StaConfig.targetMac[3], config.StaConfig.targetMac[4], config.StaConfig.targetMac[5]}, /**< MAC address of target AP*/
                            //    .channel = 0,
                            //    .listen_interval = 3,
                            //    .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
-                           .threshold = (wifi_scan_threshold_t){.rssi = 99, .authmode = (wifi_auth_mode_t)config.StaConfig.auth},
+                           .threshold = (wifi_scan_threshold_t){.rssi = 99, .authmode = (wifi_auth_mode_t)config.StaConfig.authentication},
                            //    .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
                            //    .rm_enabled = (uint32_t)1,
                            //    .btm_enabled = (uint32_t)1,
@@ -150,27 +227,26 @@ void WifiService::SetStationConfig(WifiConfig config)
                            //    .sae_pwe_h2e = WPA3_SAE_PWE_UNSPECIFIED,
                            //    .failure_retry_cnt = 5,
                        }};
-    this->MacSafeValidator(WIFI_IF_STA, config.StaConfig.mac);
+    this->macSafeValidator(WIFI_IF_STA, config.StaConfig.mac);
     esp_wifi_set_mac(WIFI_IF_STA, config.StaConfig.mac);
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
 }
 
-NetworkIpAddress WifiService::GetStaConfig()
+NetworkProperties WifiService::getStaConfig()
 {
-    logString(tag, "Searching Station Config");
-    NetworkIpAddress station;
+    this->logString(tag, "Searching Station Config");
+    NetworkProperties station;
     wifi_ap_record_t ap;
 
     if (ESP_OK != esp_wifi_sta_get_ap_info(&ap))
     {
         station.ssid = "NULL";
-        station.auth = 0;
-        station.mode = WIFI_MODE_STA;
+        station.authentication = 0;
         station.password = "NULL";
         memset(station.mac, 0, sizeof(station.mac));
-        memset(station.ip, 0, sizeof(station.ip));
-        memset(station.mask, 0, sizeof(station.mask));
-        memset(station.gateway, 0, sizeof(station.gateway));
+        memset(station.ip.ip, 0, sizeof(station.ip.ip));
+        memset(station.ip.mask, 0, sizeof(station.ip.mask));
+        memset(station.ip.gateway, 0, sizeof(station.ip.gateway));
     }
     else
     {
@@ -178,22 +254,21 @@ NetworkIpAddress WifiService::GetStaConfig()
         esp_netif_get_ip_info(esp_netif_sta, &ipInfo);
 
         station.ssid = (const char *)&ap.ssid;
-        station.auth = ap.authmode;
-        station.mode = WIFI_MODE_STA;
+        station.authentication = ap.authmode;
         station.password = this->StaPassword;
         memcpy(station.mac, ap.bssid, sizeof(ap.bssid));
-        memcpy(station.ip, &ipInfo.ip, sizeof(ipInfo.ip));
-        memcpy(station.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
-        memcpy(station.gateway, &ipInfo.gw, sizeof(ipInfo.gw));
+        memcpy(station.ip.ip, &ipInfo.ip, sizeof(ipInfo.ip));
+        memcpy(station.ip.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
+        memcpy(station.ip.gateway, &ipInfo.gw, sizeof(ipInfo.gw));
     }
-    logString(tag, "Finish");
+    this->logString(tag, "Finish");
     return station;
 }
 
-void WifiService::SetApConfig(WifiConfig config)
+void WifiService::setApConfig(WifiConfig config)
 {
     this->logString(tag, "Setting Access Point configuration");
-    this->SetIpAddress(NetworkInterface::WifiAp, config.ApConfig);
+    this->setIpAddress(WifiMode::Ap, config.ApConfig);
 
     uint8_t _ssid[32];
     uint8_t _pass[64];
@@ -202,7 +277,7 @@ void WifiService::SetApConfig(WifiConfig config)
     memcpy(_ssid, config.ApConfig.ssid.c_str(), sizeof(config.ApConfig.ssid));
     memcpy(_pass, config.ApConfig.password.c_str(), sizeof(config.ApConfig.password));
     this->ApPassword = string((const char *)_pass);
-    this->ApAuthenticationMode = config.ApConfig.auth;
+    this->ApAuthenticationMode = config.ApConfig.authentication;
 
     wifi_config = {.ap =
                        {
@@ -228,15 +303,15 @@ void WifiService::SetApConfig(WifiConfig config)
                            //    .ftm_responder = 1,
                            //    .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
                        }};
-    this->MacSafeValidator(WIFI_IF_AP, config.ApConfig.mac);
+    this->macSafeValidator(WIFI_IF_AP, config.ApConfig.mac);
     esp_wifi_set_mac(WIFI_IF_AP, config.ApConfig.mac);
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
 }
 
-NetworkIpAddress WifiService::GetApConfig()
+NetworkProperties WifiService::getApConfig()
 {
-    logString(tag, "Searching Ap Config");
-    NetworkIpAddress apConfig;
+    this->logString(tag, "Searching Ap Config");
+    NetworkProperties apConfig;
     esp_netif_ip_info_t ipInfo;
     const char *hostName;
     uint8_t mac[6];
@@ -245,64 +320,61 @@ NetworkIpAddress WifiService::GetApConfig()
     esp_netif_get_mac(esp_netif_ap, mac);
 
     apConfig.ssid = string(hostName);
-    apConfig.auth = this->ApAuthenticationMode;
-    apConfig.mode = WIFI_MODE_AP;
+    apConfig.authentication = this->ApAuthenticationMode;
     apConfig.password = this->ApPassword;
 
     memcpy(apConfig.mac, mac, sizeof(mac));
-    memcpy(apConfig.ip, &ipInfo.ip, sizeof(ipInfo.ip));
-    memcpy(apConfig.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
-    memcpy(apConfig.gateway, &ipInfo.gw, sizeof(ipInfo.gw));
+    memcpy(apConfig.ip.ip, &ipInfo.ip, sizeof(ipInfo.ip));
+    memcpy(apConfig.ip.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
+    memcpy(apConfig.ip.gateway, &ipInfo.gw, sizeof(ipInfo.gw));
 
-    logString(tag, "Finish");
+    this->logString(tag, "Finish");
     return apConfig;
 }
 
-bool WifiService::InitWifiService(WifiConfig config)
+bool WifiService::init(WifiConfig config)
 {
     esp_netif_init();
     nvs_flash_init();
     esp_event_loop_create_default();
 
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &WifiEventHandler, NULL, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &WifiEventHandler, NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifiEventHandler, NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifiEventHandler, NULL, NULL));
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    logString(tag, "-> Initializing WiFi mode <-");
+    this->logString(tag, "-> Initializing WiFi mode <-");
 
     switch (config.mode)
     {
-    case WiFiMode::Ap:
+    case WifiMode::Ap:
         esp_wifi_set_mode(WIFI_MODE_AP);
-        SetApConfig(config);
+        setApConfig(config);
         break;
-    case WiFiMode::Station:
+    case WifiMode::Station:
         esp_wifi_set_mode(WIFI_MODE_STA);
-        SetStationConfig(config);
+        setStationConfig(config);
         break;
-    case WiFiMode::ApStation:
+    case WifiMode::ApStation:
         esp_wifi_set_mode(WIFI_MODE_APSTA);
-        SetApConfig(config);
-        SetStationConfig(config);
+        setApConfig(config);
+        setStationConfig(config);
         break;
     default:
-        logString(tag, "Wifi mode unknown");
+        this->logString(tag, "Wifi mode unknown");
         return false;
         break;
     }
     if (esp_wifi_start() == ESP_OK)
-    {
-        CreateSocket(1100);
         return true;
-    }
+
     return false;
 }
 
-uint16_t WifiService::ScanWifiNetworks(ApRecordList *apRecords)
+uint16_t WifiService::scanWifiNetworks(ApRecordList *apRecords)
 {
-    logString(tag, "Start WiFi networks scanning");
+    this->logString(tag, "Start WiFi networks scanning");
     uint16_t numberOfApScanned = 0;
     wifi_ap_record_t apRecordsScanned[MAXIMUM_SIZE_OF_SCAN_LIST];
     uint16_t maximumSizeOfScanList = MAXIMUM_SIZE_OF_SCAN_LIST;
@@ -321,7 +393,7 @@ uint16_t WifiService::ScanWifiNetworks(ApRecordList *apRecords)
     return numberOfApScanned;
 }
 
-bool WifiService::MacSafeValidator(wifi_interface_t interface, uint8_t *mac)
+bool WifiService::macSafeValidator(wifi_interface_t interface, uint8_t *mac)
 {
     if ((mac[0] & (char)0x01) == 0x01)
     {
@@ -331,33 +403,33 @@ bool WifiService::MacSafeValidator(wifi_interface_t interface, uint8_t *mac)
         mac[3] = DEFAULT_WIFI_MAC_3;
         mac[4] = DEFAULT_WIFI_MAC_4;
         mac[5] = (interface == WIFI_IF_AP ? 0x01 : 0x02);
-        logString(tag, "Mac[0] byte error, setting defult Mac");
+        this->logString(tag, "Mac[0] byte error, setting defult Mac");
         return false;
     }
     return true;
 }
 
-WifiConfig WifiService::GetConfig()
+WifiConfig WifiService::getConfig()
 {
     WifiConfig config;
     wifi_mode_t mode;
     esp_wifi_get_mode(&mode);
-    config.mode = (WiFiMode)mode;
+    config.mode = (WifiMode)mode;
 
     switch (config.mode)
     {
-    case WiFiMode::Ap:
-        config.ApConfig = this->GetApConfig();
+    case WifiMode::Ap:
+        config.ApConfig = this->getApConfig();
         break;
-    case WiFiMode::Station:
-        config.StaConfig = this->GetStaConfig();
+    case WifiMode::Station:
+        config.StaConfig = this->getStaConfig();
         break;
-    case WiFiMode::ApStation:
-        config.ApConfig = this->GetApConfig();
-        config.StaConfig = this->GetStaConfig();
+    case WifiMode::ApStation:
+        config.ApConfig = this->getApConfig();
+        config.StaConfig = this->getStaConfig();
         break;
     default:
-        config.mode = WiFiMode::Unkown;
+        config.mode = WifiMode::Unkown;
         break;
     }
     return config;

@@ -1,5 +1,5 @@
-#ifndef _TCP_SERVICE_HPP
-#define _TCP_SERVICE_HPP
+#ifndef _TCP_HPP_
+#define _TCP_HPP_
 
 #include <GlobalDefines.hpp>
 #include <freertos/FreeRTOS.h>
@@ -13,11 +13,14 @@
 #include "lwip/sys.h"
 #include <lwip/netdb.h>
 
+#include "ProtocolsInterface.hpp"
+
 using namespace std;
 
 #define TCP_RX_BUFFER_SIZE (KB) / 2
 #define TCP_TX_BUFFER_SIZE (KB) * (1.5)
-#define TCP_TASK_SIZE (KB) * (4)
+#define TCP_TASK_SIZE (KB) * (6)
+#define TCP_MAX_SERVERS 5
 
 typedef enum protocolCommand
 {
@@ -28,61 +31,43 @@ typedef enum protocolCommand
     setDefaultMemoryValues = 0x0C
 } ProtocolCommand;
 
-typedef struct _NetworkIpAddress
+typedef struct _TcpServerConfiguration
 {
-    string ssid;
-    string password;
-    uint8_t auth;
-    uint8_t mode;
-    uint8_t mac[6];
-    uint8_t apMac[6];
-    uint8_t ip[4];
-    uint8_t mask[4];
-    uint8_t gateway[4];
-    bool dhcpEnlabled;
-} NetworkIpAddress;
-
-typedef enum _NetworkInterface
-{
-    Ethernet,
-    WifiAp,
-    WifiStation,
-} NetworkInterface;
+    uint16_t port;
+    void (*callback)(char *bufferIn);
+} TcpServerConfiguration;
 
 /*TcpSocker buffer and state flag*/
-static char tcpBuffer[TCP_RX_BUFFER_SIZE];
+// static char tcpBuffer[TCP_RX_BUFFER_SIZE];
 static int socketState;
 
-class TcpService
+class Tcp : public ProtocolsInterface
 {
 private:
     static constexpr string tag = "TCP";
     static bool isValidFrame(char *frame, uint len);
-    static void serverTask(void *pvParameters);
-    static void DoRetransmit(const int sock);
+    static void serverLaunch(void *pvParameters);
+    static void serverTask(const int sock,  void (*tcpBuffer)(char *));
+    uint16_t _port[TCP_MAX_SERVERS];
+    char *_buffer[TCP_MAX_SERVERS][TCP_RX_BUFFER_SIZE];
+    uint16_t _quantityServersOn;
 
 protected:
     esp_netif_t *esp_netif_ap;
     esp_netif_t *esp_netif_sta;
     esp_netif_t *esp_netif_eth;
-    void SetIpAddress(NetworkInterface interface, NetworkIpAddress ipConfig);
-    void CreateSocket(uint16_t port);
 
 public:
-    TcpService(/* args */);
-    void TcpAppStack();
-    void SendTcpMessage(string message);
-
-    void (*logString)(string TAG, string message);
-    void (*logDword)(string TAG, int32_t logNumber);
-    void (*logFloat)(string TAG, double logFloating);
+    Tcp(/* args */);
+    // void tcpAppStack(char * buffer);
+    void createTcpServer(TcpServerConfiguration &config);
+    void sendTcpMessage(string message);
     void (*RestartSystem)(void);
     void (*SendWifiApRecordsScanned)(void);
     void (*SaveWifiApRecord)(void);
     void (*SetDefaultMemoryValues)(void);
     void (*SendDeviceInfo)(void);
 
-    ~TcpService();
+    ~Tcp();
 };
-
 #endif

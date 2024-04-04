@@ -3,13 +3,14 @@
 
 idf_component_register(
     SRCS 
-    UartsFunctions.cpp
-    Formatter.cpp
-    WiFiService.cpp 
-    TcpService.cpp
     WebApiConsumer.cpp
-    InputsOutputs.cpp  
-    FileSystem.cpp
+    source/wired/Uarts.cpp
+    source/fileSystem/LocalStorage.cpp
+    source/network/protocols/Tcp.cpp
+    source/network/wifi/Wifi.cpp
+    source/network/ethernet/Ethernet.cpp
+    source/format/Formatter.cpp
+    source/gpio/Gpio.cpp
     main.cpp       		 # list the source files of this component
     INCLUDE_DIRS .       # optional, add here public include directories
     includes
