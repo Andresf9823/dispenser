@@ -59,14 +59,8 @@ protected:
 
 public:
     Tcp(/* args */);
-    // void tcpAppStack(char * buffer);
     void createTcpServer(TcpServerConfiguration &config);
     void sendTcpMessage(string message);
-    void (*RestartSystem)(void);
-    void (*SendWifiApRecordsScanned)(void);
-    void (*SaveWifiApRecord)(void);
-    void (*SetDefaultMemoryValues)(void);
-    void (*SendDeviceInfo)(void);
 
     ~Tcp();
 };

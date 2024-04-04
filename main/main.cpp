@@ -4,8 +4,7 @@
 
 using namespace std;
 
-TcpServerConfiguration appServerconfig1;
-TcpServerConfiguration appServerconfig2;
+TcpServerConfiguration appServerconfig;
 
 static string tag = "MAIN";
 
@@ -132,21 +131,13 @@ void initObjects()
 	Wifi->logString = logString;
 	Wifi->logDword = logDword;
 	Wifi->logFloat = logFloat;
-	Wifi->RestartSystem = RestartSystem;
-	Wifi->SendDeviceInfo = SendDeviceInfo;
-	Wifi->SendWifiApRecordsScanned = SendWifiApRecordsScanned;
-	Wifi->SaveWifiApRecord = SaveWifiApRecord;
-	Wifi->SetDefaultMemoryValues = SetDefaultMemoryValues;
 
 	WifiConfig wifiConfig = Storage->readWifiConfig();
 	if (Wifi->init(wifiConfig))
 	{
-		appServerconfig1.port = 1100;
-		appServerconfig1.callback = DeviceConfigApiStack;
-		Wifi->createTcpServer(appServerconfig1);
-		appServerconfig2.port = 8520;
-		appServerconfig2.callback = DeviceConfigApiStack;
-		Wifi->createTcpServer(appServerconfig2);
+		appServerconfig.port = 1100;
+		appServerconfig.callback = DeviceConfigApiStack;
+		Wifi->createTcpServer(appServerconfig);
 		if (wifiConfig.mode != WifiMode::Ap)
 		{
 			ApRecordList apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
@@ -159,9 +150,4 @@ extern "C" void app_main(void)
 {
 	logString(tag, "Go project!");
 	initObjects();
-
-	while (true)
-	{
-		vTaskDelay(1);
-	}
 }
