@@ -4,6 +4,7 @@
 #include "../format/ArduinoJson-v6.21.3.h"
 #include "Ip.hpp"
 #include "protocols/Tcp.hpp"
+#include "protocols/Http.hpp"
 
 typedef struct _NetworkProperties
 {
@@ -16,7 +17,7 @@ typedef struct _NetworkProperties
     uint8_t authentication;
 } NetworkProperties;
 
-class Network : public Tcp
+class Network : public Tcp, Http
 {
 private:
     /* data */

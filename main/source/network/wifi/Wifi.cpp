@@ -36,7 +36,7 @@ void WifiService::wifiEventHandler(void *arg, esp_event_base_t event_base, int32
             if (event != NULL)
             {
                 ESP_LOGI("AP DISCONECTED",
-                         "ID: %d MAC:%02X:%02X:%02X:%02X:%02X%02X", event->aid,
+                         "ID: %d MAC:%02X:%02X:%02X:%02X:%02X:%02X", event->aid,
                          event->mac[0], event->mac[1], event->mac[2], event->mac[3],
                          event->mac[4], event->mac[5]);
                 if (event->is_mesh_child)
@@ -133,7 +133,6 @@ void WifiService::setIpAddress(WifiMode mode, NetworkProperties ipConfig)
                .driver = NULL,
                .stack = ESP_NETIF_NETSTACK_DEFAULT_WIFI_AP};
 
-
         esp_netif_ap = esp_netif_new(&cfg);
         esp_netif_dhcps_stop(esp_netif_ap);
         esp_netif_set_hostname(esp_netif_ap, ipConfig.ssid.c_str());
@@ -189,9 +188,12 @@ void WifiService::setStationConfig(WifiConfig config)
     uint8_t _pass[64];
     memset(_ssid, 0, sizeof(_ssid));
     memset(_pass, 0, sizeof(_pass));
-    memcpy(_ssid, config.ApConfig.ssid.c_str(), sizeof(config.ApConfig.ssid));
-    memcpy(_pass, config.ApConfig.password.c_str(), sizeof(config.ApConfig.password));
+    memcpy(_ssid, config.StaConfig.ssid.c_str(), sizeof(config.StaConfig.ssid));
+    memcpy(_pass, config.StaConfig.password.c_str(), sizeof(config.StaConfig.password));
     this->StaPassword = string((const char *)_pass);
+
+    logString("ssid",config.StaConfig.ssid);
+    logString("pssd", config.StaConfig.password);
 
     wifi_config = {.sta =
                        {
@@ -350,16 +352,16 @@ bool WifiService::init(WifiConfig config)
     {
     case WifiMode::Ap:
         esp_wifi_set_mode(WIFI_MODE_AP);
-        setApConfig(config);
+        this->setApConfig(config);
         break;
     case WifiMode::Station:
         esp_wifi_set_mode(WIFI_MODE_STA);
-        setStationConfig(config);
+        this->setStationConfig(config);
         break;
     case WifiMode::ApStation:
         esp_wifi_set_mode(WIFI_MODE_APSTA);
-        setApConfig(config);
-        setStationConfig(config);
+        this->setApConfig(config);
+        this->setStationConfig(config);
         break;
     default:
         this->logString(tag, "Wifi mode unknown");
@@ -372,24 +374,35 @@ bool WifiService::init(WifiConfig config)
     return false;
 }
 
+ApRecordList WifiService::getRecordScannned(uint8_t index)
+{
+    logString(tag, "Record in last scan");
+    logString("SSID", string(apRecordsScanned[index].ssid));
+    logDword("RSSID", apRecordsScanned[index].rssi);
+    logDword("AUTHMODE", apRecordsScanned[index].authMode);
+    return apRecordsScanned[index];
+}
+
 uint16_t WifiService::scanWifiNetworks(ApRecordList *apRecords)
 {
     this->logString(tag, "Start WiFi networks scanning");
     uint16_t numberOfApScanned = 0;
-    wifi_ap_record_t apRecordsScanned[MAXIMUM_SIZE_OF_SCAN_LIST];
     uint16_t maximumSizeOfScanList = MAXIMUM_SIZE_OF_SCAN_LIST;
+    wifi_ap_record_t _apRecordsScanned[MAXIMUM_SIZE_OF_SCAN_LIST];
+    memset(_apRecordsScanned, 0, sizeof(_apRecordsScanned));
     memset(apRecords, 0, MAXIMUM_SIZE_OF_SCAN_LIST);
     esp_wifi_scan_start(NULL, true);
-    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&maximumSizeOfScanList, apRecordsScanned));
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&maximumSizeOfScanList, _apRecordsScanned));
     ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&numberOfApScanned));
     numberOfApScanned = numberOfApScanned > MAXIMUM_SIZE_OF_SCAN_LIST ? MAXIMUM_SIZE_OF_SCAN_LIST : numberOfApScanned;
     for (uint8_t i = 0; i < numberOfApScanned; i++)
     {
-        memcpy(apRecords[i].mac, apRecordsScanned[i].bssid, sizeof(apRecordsScanned[i].bssid));
-        memcpy(apRecords[i].ssid, apRecordsScanned[i].ssid, sizeof(apRecordsScanned[i].ssid));
-        apRecords[i].rssi = apRecordsScanned[i].rssi;
-        apRecords[i].authMode = apRecordsScanned[i].authmode;
+        memcpy(apRecords[i].mac, _apRecordsScanned[i].bssid, sizeof(_apRecordsScanned[i].bssid));
+        memcpy(apRecords[i].ssid, _apRecordsScanned[i].ssid, sizeof(_apRecordsScanned[i].ssid));
+        apRecords[i].rssi = _apRecordsScanned[i].rssi;
+        apRecords[i].authMode = _apRecordsScanned[i].authmode;
     }
+    memcpy(apRecordsScanned, apRecords, sizeof(apRecordsScanned));
     return numberOfApScanned;
 }
 

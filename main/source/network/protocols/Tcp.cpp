@@ -4,36 +4,7 @@ Tcp::Tcp(/* args */)
 {
 }
 
-// void Tcp::tcpAppStack(char *buffer)
-// {
-//     if (strlen(buffer) > 0 && sizeof(buffer) == TCP_RX_BUFFER_SIZE)
-//     {
-//         switch (buffer[3] & 0xFF)
-//         {
-//         case ProtocolCommand::restartSystem: // 7B 00 7C 00 7C 7D
-//             this->RestartSystem();
-//             break;
-//         case ProtocolCommand::sendDeviceInfo: // 7B 00 7C 0B 7C 7D
-//             this->SendDeviceInfo();
-//             break;
-//         case ProtocolCommand::sendWifiApRecords: // 7B 00 7C 1B 7C 7D
-//             this->SendWifiApRecordsScanned();
-//             break;
-//         case ProtocolCommand::setDefaultMemoryValues: // 7B 00 7C 0C 7C 7D
-//             this->SetDefaultMemoryValues();
-//             break;
-//         case ProtocolCommand::saveWifiApRecord:
-//             this->SaveWifiApRecord();
-//             break;
-//         default:
-//             this->logString(tag, "Invalid Character");
-//             break;
-//         }
-//         memset(buffer, 0, TCP_RX_BUFFER_SIZE);
-//     }
-// }
-
-void Tcp::sendTcpMessage(string message)
+void Tcp::sendTcpMessage(string message, int &socketState)
 {
     if (socketState != 0)
     {
@@ -55,13 +26,14 @@ void Tcp::sendTcpMessage(string message)
     }
     else
     {
-        this->logString(tag, "Socket is not connected");
+        ESP_LOGW(tag.c_str(), "%s", "Socket is not connected");
     }
 }
 
-void Tcp::serverTask(const int sock, void (*tcpBuffer)(char *))
+void Tcp::serverTask(const int sock, string (*callbackFunction)(char *))
 {
     int len;
+    int socketState;
     char rxTcpbuffer[TCP_RX_BUFFER_SIZE];
 
     do
@@ -93,9 +65,10 @@ void Tcp::serverTask(const int sock, void (*tcpBuffer)(char *))
 
             if (isValidFrame(rxTcpbuffer, len))
             {
-                // memset(tcpBuffer, 0, TCP_RX_BUFFER_SIZE);
-                // memcpy(tcpBuffer, (const char *)rxTcpbuffer, TCP_RX_BUFFER_SIZE);
-                tcpBuffer(rxTcpbuffer);
+                string data = callbackFunction(rxTcpbuffer);
+                if(!data.empty()){
+                    sendTcpMessage(data, socketState);
+                }
             }
             /*
                         // send() can return less bytes than supplied length.
@@ -216,8 +189,7 @@ bool Tcp::isValidFrame(char *buffer, uint len)
 
 void Tcp::createTcpServer(TcpServerConfiguration &config)
 {
-
-    xTaskCreatePinnedToCore(serverLaunch, "TCP SERVER", TCP_TASK_SIZE, &config, 5, NULL, 1);
+    xTaskCreatePinnedToCore(serverLaunch, "TCP SERVER", TCP_TASK_SIZE, &config, 5, NULL, 0);
 }
 
 Tcp::~Tcp()

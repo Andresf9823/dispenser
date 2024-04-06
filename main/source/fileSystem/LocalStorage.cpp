@@ -29,12 +29,12 @@ void LocalStorage::setDefaultValues()
     this->writeBooleanRecord(NVS_UART2_EN, true);
     ESP_LOGI(tag.c_str(), "%s", "WRITING INFO");
 
-    this->writeUint32tRecord(NVS_DEVICE_ID, 1234091869);
-    this->writeUint8tRecord(NVS_WIFI_MODE, WifiMode::ApStation);
+    this->writeDwordRecord(NVS_DEVICE_ID, 1234091869);
+    this->writeByteRecord(NVS_WIFI_MODE, WifiMode::ApStation);
 
     this->writeStringRecord(NVS_AP_SSID, "BERDUGO_ESP");
     this->writeStringRecord(NVS_AP_PASSWORD, "123456789");
-    this->writeUint8tRecord(NVS_AP_AUTH_MODE, wifi_auth_mode_t::WIFI_AUTH_WPA2_PSK);
+    this->writeByteRecord(NVS_AP_AUTH_MODE, wifi_auth_mode_t::WIFI_AUTH_WPA2_PSK);
     this->writeStringRecord(NVS_AP_MAC, format.macToString(mac, sizeof(mac)));
     this->writeStringRecord(NVS_AP_IP_ADDRESS, format.ipAddressToString(ipAddress));
     this->writeStringRecord(NVS_AP_SUBNET, format.ipAddressToString(subnet));
@@ -43,7 +43,7 @@ void LocalStorage::setDefaultValues()
 
     this->writeStringRecord(NVS_STA_SSID, "");
     this->writeStringRecord(NVS_STA_PASSWORD, "");
-    this->writeUint8tRecord(NVS_STA_AUTH_MODE, wifi_auth_mode_t::WIFI_AUTH_OPEN);
+    this->writeByteRecord(NVS_STA_AUTH_MODE, wifi_auth_mode_t::WIFI_AUTH_OPEN);
     this->writeStringRecord(NVS_STA_TARGET_MAC, "");
     this->writeStringRecord(NVS_STA_MAC, "");
     this->writeStringRecord(NVS_STA_IP_ADDRESS, "");
@@ -75,10 +75,10 @@ WifiConfig LocalStorage::readWifiConfig()
     memset(config.StaConfig.ip.gateway, 0, sizeof(config.StaConfig.ip.gateway));
 
     ESP_LOGI(tag.c_str(), "%s", "Reading Wifi Configuration");
-    config.mode = static_cast<WifiMode>(this->readUint8tRecord(NVS_WIFI_MODE));
+    config.mode = static_cast<WifiMode>(this->readByteRecord(NVS_WIFI_MODE));
 
     ESP_LOGI(tag.c_str(), "%s", "Reading Ap Configuration");
-    config.ApConfig.authentication = static_cast<WifiMode>(this->readUint8tRecord(NVS_AP_AUTH_MODE));
+    config.ApConfig.authentication = static_cast<WifiMode>(this->readByteRecord(NVS_AP_AUTH_MODE));
     config.ApConfig.ssid = this->readStringRecord(NVS_AP_SSID);
     config.ApConfig.password = this->readStringRecord(NVS_AP_PASSWORD);
     config.ApConfig.dhcpEnabled = this->readBooleanRecord(NVS_AP_DHCP_ENABLE);
@@ -94,7 +94,7 @@ WifiConfig LocalStorage::readWifiConfig()
     memcpy(config.ApConfig.ip.gateway, ip, ipSize);
 
     ESP_LOGI(tag.c_str(), "%s", "Reading Sta Configuration");
-    config.StaConfig.authentication = static_cast<WifiMode>(this->readUint8tRecord(NVS_STA_AUTH_MODE));
+    config.StaConfig.authentication = static_cast<WifiMode>(this->readByteRecord(NVS_STA_AUTH_MODE));
     config.StaConfig.ssid = this->readStringRecord(NVS_STA_SSID);
     config.StaConfig.password = this->readStringRecord(NVS_STA_PASSWORD);
     config.StaConfig.dhcpEnabled = this->readBooleanRecord(NVS_STA_DHCP_ENABLE);
@@ -115,12 +115,20 @@ WifiConfig LocalStorage::readWifiConfig()
     return config;
 }
 
-ApiConfig LocalStorage::GetApiConfig()
+ApiConfig LocalStorage::getApiConfig()
 {
     ApiConfig config;
     ESP_LOGI(tag.c_str(), "%s", "Reading Sta Api configuration");
     config.host = this->readStringRecord(NVS_STA_API_HOST);
     return config;
+}
+
+void LocalStorage::saveStationTarget(ApRecordList record, string password)
+{
+    this->writeStringRecord(NVS_STA_TARGET_MAC, Formatter::macToString(record.mac, sizeof(record.mac)));
+    this->writeStringRecord(NVS_STA_SSID, string(record.ssid));
+    this->writeByteRecord(NVS_STA_AUTH_MODE, record.authMode);
+    this->writeStringRecord(NVS_STA_PASSWORD, password);
 }
 
 string LocalStorage::readStringRecord(string _key)
@@ -152,15 +160,15 @@ bool LocalStorage::writeStringRecord(string _key, string record)
 
 bool LocalStorage::readBooleanRecord(string _key)
 {
-    return this->readUint8tRecord(_key) == 0 ? false : true;
+    return this->readByteRecord(_key) == 0 ? false : true;
 }
 
 bool LocalStorage::writeBooleanRecord(string _key, bool record)
 {
-    return this->writeUint8tRecord(_key, record);
+    return this->writeByteRecord(_key, record);
 }
 
-uint8_t LocalStorage::readUint8tRecord(string _key)
+uint8_t LocalStorage::readByteRecord(string _key)
 {
     uint8_t value;
     const char *key = _key.c_str();
@@ -170,7 +178,7 @@ uint8_t LocalStorage::readUint8tRecord(string _key)
     return value;
 }
 
-bool LocalStorage::writeUint8tRecord(string _key, uint8_t record)
+bool LocalStorage::writeByteRecord(string _key, uint8_t record)
 {
     bool writed = false;
     const char *key = _key.c_str();
@@ -185,28 +193,28 @@ bool LocalStorage::writeUint8tRecord(string _key, uint8_t record)
     return false;
 }
 
-uint32_t LocalStorage::readUint32tRecord(string _key)
+int64_t LocalStorage::readDwordRecord(string _key)
 {
-    uint32_t value;
+    int64_t value;
     const char *key = _key.c_str();
     if (this->open(_key, NVS_READONLY))
-        this->errorCheck(nvs_get_u32(handle, key, &value), key);
+        this->errorCheck(nvs_get_i64(handle, key, &value), key);
     nvs_close(handle);
     return value;
 }
 
-bool LocalStorage::writeUint32tRecord(string _key, uint32_t record)
+bool LocalStorage::writeDwordRecord(string _key, int64_t record)
 {
     bool writed = false;
     const char *key = _key.c_str();
     if (this->open(_key, NVS_READWRITE))
     {
-        writed = this->errorCheck(nvs_set_u32(handle, key, record), _key);
+        writed = this->errorCheck(nvs_set_i64(handle, key, record), _key);
         nvs_commit(handle);
         nvs_close(handle);
         return writed;
     }
-    ESP_LOGE(tag.c_str(), "Failed writing  uint32: '%s'", key);
+    ESP_LOGE(tag.c_str(), "Failed writing int64: '%s'", key);
     return false;
 }
 

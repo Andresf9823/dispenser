@@ -4,7 +4,7 @@
 
 using namespace std;
 
-TcpServerConfiguration appServerconfig;
+TcpServerConfiguration appServer;
 
 static string tag = "MAIN";
 
@@ -28,91 +28,150 @@ void logFloat(string TAG, double logFloating)
 	logString(TAG, to_string(logFloating));
 }
 
-void SendWifiApRecordsScanned()
-{
-	ApRecordList apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
-	uint16_t recordsScanned = Wifi->scanWifiNetworks(apRecords);
-	Wifi->sendTcpMessage(Formatter::apRecordsList(apRecords, recordsScanned));
-}
-
-void SendDeviceInfo()
+string SendDeviceInfo()
 {
 	DeviceInformation deviceInfo;
-
-	deviceInfo.deviceId = Storage->readUint32tRecord(NVS_DEVICE_ID);
+	deviceInfo.deviceId = Storage->readDwordRecord(NVS_DEVICE_ID);
 	deviceInfo.versionApp = VERSION_APP;
 	deviceInfo.wifiConfig = Wifi->getConfig();
-	// deviceInfo.WifiApiClient = Wifi->ApiSta->GetConfig();
-	Wifi->sendTcpMessage(Formatter::deviceInformation(deviceInfo));
+	return Formatter::deviceInformation(deviceInfo);
 }
 
-void SetDefaultMemoryValues()
+string SetDefaultMemoryValues()
 {
 	CommandResult result;
 	result.command = ProtocolCommand::setDefaultMemoryValues;
-	result.deviceId = Storage->readUint32tRecord(NVS_DEVICE_ID);
+	result.deviceId = Storage->readDwordRecord(NVS_DEVICE_ID);
 	result.status = true;
 	result.message = "Default values loaded, please restart system";
 	Storage->setDefaultValues();
-	Wifi->sendTcpMessage(Formatter::reportMessageFromCommand(result));
+	return Formatter::reportMessageFromCommand(result);
 }
 
-void SaveWifiApRecord()
+string SaveWifiApRecord(uint8_t index, string password)
 {
+	CommandResult result;
+	ApRecordList record = Wifi->getRecordScannned(index);
+	Storage->saveStationTarget(record, password);
+	result.command = ProtocolCommand::saveWifiApRecord;
+	result.deviceId = Storage->readDwordRecord(NVS_DEVICE_ID);
+	result.status = true;
+	result.message = "Ap record saved on local storage";
+	return Formatter::reportMessageFromCommand(result);
 }
 
-void RestartSystem()
+string SendWifiApRecordsScanned()
+{
+	ApRecordList apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
+	uint16_t recordsScanned = Wifi->scanWifiNetworks(apRecords);
+	return Formatter::apRecordsList(apRecords, recordsScanned);
+}
+
+string SetMac(uint8_t *mac, WifiMode mode)
+{
+	CommandResult result;
+	result.deviceId = Storage->readDwordRecord(NVS_DEVICE_ID);
+	result.status = true;
+	string key;
+	switch (mode)
+	{
+	case WifiMode::Ap:
+		key = NVS_AP_MAC;
+		break;
+	case WifiMode::Station:
+		key = NVS_STA_MAC;
+		break;
+	case WifiMode::Unkown: // Ethernet interface
+		key = NVS_ETH_MAC;
+		break;
+	default:
+		break;
+	}
+	Storage->writeStringRecord(key,Formatter::macToString(mac, sizeof(mac)));
+	result.message = "Saved mac on wInterface " + to_string(mode);
+	logString(tag, result.message);
+	return Formatter::reportMessageFromCommand(result);
+}
+
+string RestartSystem()
 {
 	CommandResult result;
 	result.command = ProtocolCommand::restartSystem;
-	result.deviceId = Storage->readUint32tRecord(NVS_DEVICE_ID);
+	result.deviceId = Storage->readDwordRecord(NVS_DEVICE_ID);
 	result.status = true;
 	result.message = "RESTARTING SYSTEM IN 3 SECONDS";
 	logString(tag, result.message);
-	Wifi->sendTcpMessage(Formatter::reportMessageFromCommand(result));
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		logString(tag, ".");
 		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
-	Wifi->sendTcpMessage("Restarting");
+	logString(tag, "Restarting");
 	esp_restart();
+	return Formatter::reportMessageFromCommand(result);
 }
 
-void DeviceConfigApiStack(char *buffer)
+string LoginApp(string userEmail, string password)
 {
+	CommandResult result;
+	result.command = ProtocolCommand::login;
+	result.deviceId = Storage->readDwordRecord(NVS_DEVICE_ID);
+	if (userEmail == "andresf9806@gmail.com" && password == "Chan.61522_")
+	{
+		result.status = true;
+		result.message = "User " + userEmail + " logged succedfully";
+	}
+	else
+	{
+		result.status = false;
+		result.message = "Please check the credentials";
+	}
+	return Formatter::reportMessageFromCommand(result);
+}
 
+string DeviceConfigApiStack(char *buffer)
+{
 	if (strlen(buffer) > 0)
 	{
 		switch (buffer[3] & 0xFF)
 		{
 		case ProtocolCommand::restartSystem: // 7B 00 7C 00 7C 7D
-			RestartSystem();
+			return RestartSystem();
+			break;
+		case ProtocolCommand::login: // 7B 00 7C 01 7C 7D
+			return LoginApp("andresf9806@gmail.com", "Chan.61522_");
 			break;
 		case ProtocolCommand::sendDeviceInfo: // 7B 00 7C 0B 7C 7D
-			SendDeviceInfo();
+			return SendDeviceInfo();
 			break;
 		case ProtocolCommand::sendWifiApRecords: // 7B 00 7C 1B 7C 7D
-			SendWifiApRecordsScanned();
+			return SendWifiApRecordsScanned();
 			break;
 		case ProtocolCommand::setDefaultMemoryValues: // 7B 00 7C 0C 7C 7D
-			SetDefaultMemoryValues();
+			return SetDefaultMemoryValues();
 			break;
-		case ProtocolCommand::saveWifiApRecord: // 7B 00 7C 2B 7C 7D
-			SaveWifiApRecord();
+		case ProtocolCommand::setMac: // 7B 00 7C 1C 7C 01 7C 01 00 01 10 00 10 7C 7D
+			uint8_t mac[6];
+			for(uint8_t i = 0;i<6;i++)
+				mac[i] = buffer[7] + i;
+			return SetMac(mac, (WifiMode)buffer[5]);
+			break;
+		case ProtocolCommand::saveWifiApRecord: // 7B 00 7C 2B 7C 00 7C 7D
+			return SaveWifiApRecord(buffer[5], "1140893813");
 			break;
 		default:
 			logString(tag, "Invalid Character");
+			return "Invalid Character";
 			break;
 		}
-		memset(buffer, 0, TCP_RX_BUFFER_SIZE);
+		memset(buffer, 0, sizeof(TCP_RX_BUFFER_SIZE));
 	}
+	return "";
 }
 
 void initObjects()
 {
 	Storage = new LocalStorage();
-	Storage->setDefaultValues();
 
 	Uart = new Uarts();
 	Uart->logString = logString;
@@ -135,19 +194,19 @@ void initObjects()
 	WifiConfig wifiConfig = Storage->readWifiConfig();
 	if (Wifi->init(wifiConfig))
 	{
-		appServerconfig.port = 1100;
-		appServerconfig.callback = DeviceConfigApiStack;
-		Wifi->createTcpServer(appServerconfig);
+		appServer.port = 1100;
+		appServer.callback = DeviceConfigApiStack;
+		Wifi->createTcpServer(appServer);
 		if (wifiConfig.mode != WifiMode::Ap)
 		{
-			ApRecordList apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
-			Wifi->scanWifiNetworks(apRecords);
+			// ApRecordList apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
+			// Wifi->scanWifiNetworks(apRecords);
 		}
 	}
 }
 
 extern "C" void app_main(void)
 {
-	logString(tag, "Go project!");
+	logString(tag, ">>>>> HERE WE GO!!! <<<<<");
 	initObjects();
 }

@@ -1,11 +1,15 @@
-#include <WebApiConsumer.hpp>
+#include "network/protocols/Http.hpp"
 
-WebApiConsumer::WebApiConsumer(string target)
+Http::Http()
+{
+}
+
+void Http::setPath(string target)
 {
     this->target = target;
 }
 
-esp_err_t WebApiConsumer::WebApiEventHandler(esp_http_client_event_t *event)
+esp_err_t Http::WebApiEventHandler(esp_http_client_event_t *event)
 {
     static char *bufferOut;
     static int bufferOutLen = 0;
@@ -80,17 +84,16 @@ esp_err_t WebApiConsumer::WebApiEventHandler(esp_http_client_event_t *event)
         break;
     }
     return ESP_OK;
-
 }
 
-ApiConfig WebApiConsumer::GetConfig()
+ApiConfig Http::GetConfig()
 {
     ApiConfig config;
     config.host = this->target;
     return config;
 }
 
-void WebApiConsumer::Get(string path)
+void Http::Get(string path)
 {
     char local_response_buffer[MAX_HTTP_OUTPUT_BUFFER + 1] = {0};
     esp_http_client_config_t config = {
@@ -104,7 +107,7 @@ void WebApiConsumer::Get(string path)
     xTaskCreate(&_Get, "GET", 4096, &config, 5, NULL);
 }
 
-void WebApiConsumer::_Get(void *pvParameters)
+void Http::_Get(void *pvParameters)
 {
     esp_http_client_handle_t client = esp_http_client_init((esp_http_client_config_t *)pvParameters);
     esp_http_client_set_method(client, HTTP_METHOD_GET);
@@ -120,6 +123,6 @@ void WebApiConsumer::_Get(void *pvParameters)
     vTaskDelete(NULL);
 }
 
-WebApiConsumer::~WebApiConsumer()
+Http::~Http()
 {
 }

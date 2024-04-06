@@ -23,15 +23,16 @@ public:
 
     string readStringRecord(string _key);
     bool readBooleanRecord(string _key);
-    uint8_t readUint8tRecord(string key);
-    uint32_t readUint32tRecord(string key);
+    uint8_t readByteRecord(string key);
+    int64_t readDwordRecord(string key);
     WifiConfig readWifiConfig();
-    ApiConfig GetApiConfig();
+    ApiConfig getApiConfig();
+    void saveStationTarget(ApRecordList record, string password);
 
     bool writeStringRecord(string _key, string record);
     bool writeBooleanRecord(string _key, bool record);
-    bool writeUint32tRecord(string key, uint32_t record);
-    bool writeUint8tRecord(string key, uint8_t record);
+    bool writeDwordRecord(string key, int64_t record);
+    bool writeByteRecord(string key, uint8_t record);
 
     ~LocalStorage();
 };

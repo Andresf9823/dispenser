@@ -2,7 +2,6 @@
 #include <gpio/Gpio.hpp>
 #include <wire/Uarts.hpp>
 #include <network/wifi/Wifi.hpp>
-#include <WebApiConsumer.hpp>
 
 typedef struct _DeviceInformation
 {

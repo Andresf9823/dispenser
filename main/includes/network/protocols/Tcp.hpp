@@ -25,31 +25,30 @@ using namespace std;
 typedef enum protocolCommand
 {
     restartSystem = 0x00,
+    login = 0x01,
     sendDeviceInfo = 0x0B,
     sendWifiApRecords = 0x1B,
     saveWifiApRecord = 0x2B,
-    setDefaultMemoryValues = 0x0C
+    setDefaultMemoryValues = 0x0C,
+    setMac = 0x1C
 } ProtocolCommand;
 
 typedef struct _TcpServerConfiguration
 {
     uint16_t port;
-    void (*callback)(char *bufferIn);
+    string (*callback)(char *bufferIn);
 } TcpServerConfiguration;
-
-/*TcpSocker buffer and state flag*/
-// static char tcpBuffer[TCP_RX_BUFFER_SIZE];
-static int socketState;
 
 class Tcp : public ProtocolsInterface
 {
 private:
     static constexpr string tag = "TCP";
-    static bool isValidFrame(char *frame, uint len);
     static void serverLaunch(void *pvParameters);
-    static void serverTask(const int sock,  void (*tcpBuffer)(char *));
-    uint16_t _port[TCP_MAX_SERVERS];
+    static bool isValidFrame(char *frame, uint len);
+    static void sendTcpMessage(string message, int &socketState);
+    static void serverTask(const int sock,  string (*tcpBuffer)(char *));
     char *_buffer[TCP_MAX_SERVERS][TCP_RX_BUFFER_SIZE];
+    uint16_t _port[TCP_MAX_SERVERS];
     uint16_t _quantityServersOn;
 
 protected:
@@ -60,7 +59,6 @@ protected:
 public:
     Tcp(/* args */);
     void createTcpServer(TcpServerConfiguration &config);
-    void sendTcpMessage(string message);
 
     ~Tcp();
 };

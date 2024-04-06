@@ -3,10 +3,10 @@
 
 idf_component_register(
     SRCS 
-    WebApiConsumer.cpp
     source/wired/Uarts.cpp
     source/fileSystem/LocalStorage.cpp
     source/network/protocols/Tcp.cpp
+    source/network/protocols/Http.cpp
     source/network/wifi/Wifi.cpp
     source/network/ethernet/Ethernet.cpp
     source/format/Formatter.cpp

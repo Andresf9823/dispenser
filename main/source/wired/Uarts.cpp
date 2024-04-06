@@ -6,46 +6,48 @@ Uarts::Uarts() // @suppress("Class members should be properly initialized")
 
 void Uarts::scanUart0Rx(void *pvParameters)
 {
-	uart0Buffer = (uint8_t *)malloc(UART_RX_BUFFER_SIZE);
-	memset(uart0Buffer, 0, UART_RX_BUFFER_SIZE);
+	uint8_t *buffer;
+	buffer = (uint8_t *)malloc(UART_RX_BUFFER_SIZE);
+	memset(buffer, 0, UART_RX_BUFFER_SIZE);
 	while (1)
 	{
-		uint8_t bytesRead = uart_read_bytes(UART_NUM_0, uart0Buffer, UART_RX_BUFFER_SIZE, pdMS_TO_TICKS(50));
+		uint8_t bytesRead = uart_read_bytes(UART_NUM_0, buffer, UART_RX_BUFFER_SIZE, pdMS_TO_TICKS(50));
 		if (bytesRead > 0)
 		{
 		}
 	}
-	free(uart0Buffer);
+	free(buffer);
 }
 
 void Uarts::scanUart1Rx(void *pvParameters)
 {
-	uart1Buffer = (uint8_t *)malloc(UART_RX_BUFFER_SIZE);
-	memset(uart1Buffer, 0, UART_RX_BUFFER_SIZE);
+
+	uint8_t *buffer;
+	buffer = (uint8_t *)malloc(UART_RX_BUFFER_SIZE);
+	memset(buffer, 0, UART_RX_BUFFER_SIZE);
 	while (1)
 	{
-		uint8_t bytesRead = uart_read_bytes(UART_NUM_1, uart1Buffer,
-											sizeof(uart1Buffer), pdMS_TO_TICKS(50));
+		uint8_t bytesRead = uart_read_bytes(UART_NUM_1, buffer, sizeof(buffer), pdMS_TO_TICKS(50));
 		if (bytesRead > 0)
 		{
 		}
 	}
-	free(uart1Buffer);
+	free(buffer);
 }
 
 void Uarts::scanUart2Rx(void *pvParameters)
 {
-	uart2Buffer = (uint8_t *)malloc(UART_RX_BUFFER_SIZE);
-	memset(uart2Buffer, 0, UART_RX_BUFFER_SIZE);
+	uint8_t *buffer;
+	buffer = (uint8_t *)malloc(UART_RX_BUFFER_SIZE);
+	memset(buffer, 0, UART_RX_BUFFER_SIZE);
 	while (1)
 	{
-		uint8_t bytesRead = uart_read_bytes(UART_NUM_2, uart2Buffer,
-											sizeof(uart2Buffer), pdMS_TO_TICKS(50));
+		uint8_t bytesRead = uart_read_bytes(UART_NUM_2, buffer, sizeof(buffer), pdMS_TO_TICKS(50));
 		if (bytesRead > 0)
 		{
 		}
 	}
-	free(uart2Buffer);
+	free(buffer);
 }
 
 bool Uarts::uartInitializer(uint8_t uartNumber)

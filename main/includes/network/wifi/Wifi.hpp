@@ -43,6 +43,7 @@ class WifiService : public Tcp
 {
 private:
 	static constexpr string tag = "WIFI SERVICE";
+	ApRecordList apRecordsScanned[MAXIMUM_SIZE_OF_SCAN_LIST];
 	uint8_t ApAuthenticationMode;
 	string ApPassword;
 	string StaPassword;
@@ -60,6 +61,7 @@ public:
 	WifiService();
 	bool init(WifiConfig config);
 	uint16_t scanWifiNetworks(ApRecordList *apRecords);
+	ApRecordList getRecordScannned(uint8_t index);
 	WifiConfig getConfig();
 	~WifiService();
 };

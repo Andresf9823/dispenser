@@ -31,3 +31,4 @@
 #define NVS_STA_API_HOST "STA_API_HOST"
 
 /*Eth*/
+#define NVS_ETH_MAC "ETH_MAC"

@@ -22,10 +22,6 @@ using namespace std;
 
 #define UART_RX_BUFFER_SIZE 512
 
-static uint8_t *uart0Buffer;
-static uint8_t *uart1Buffer;
-static uint8_t *uart2Buffer;
-
 class Uarts
 {
 public:
