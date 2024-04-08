@@ -4,117 +4,130 @@ Http::Http()
 {
 }
 
-void Http::setPath(string target)
+esp_err_t Http::webApiEventHandler(esp_http_client_event_t *evt)
 {
-    this->target = target;
-}
-
-esp_err_t Http::WebApiEventHandler(esp_http_client_event_t *event)
-{
-    static char *bufferOut;
-    static int bufferOutLen = 0;
-    switch (event->event_id)
+    static char *output_buffer;  // Buffer to store response of http request from event handler
+    static int output_len;       // Stores number of bytes read
+    switch (evt->event_id)
     {
     case HTTP_EVENT_ERROR:
-        ESP_LOGE(tag.c_str(), "HTTP_EVENT_ERROR"); // This event occurs when there are any errors during execution
+        ESP_LOGD(tag.c_str(), "HTTP_EVENT_ERROR");
         break;
     case HTTP_EVENT_ON_CONNECTED:
-        ESP_LOGI(tag.c_str(), "HTTP_EVENT_ON_CONNECTED"); // Once the HTTP has been connected to the server, no data exchange has been performed
+        ESP_LOGD(tag.c_str(), "HTTP_EVENT_ON_CONNECTED");
+        break;
+    case HTTP_EVENT_HEADER_SENT:
+        ESP_LOGD(tag.c_str(), "HTTP_EVENT_HEADER_SENT");
         break;
     case HTTP_EVENT_ON_HEADER:
-        ESP_LOGI(tag.c_str(), "HTTP_EVENT_ON_HEADER"); // Occurs when receiving each header sent from the server
-        ESP_LOGI(tag.c_str(), "HEADER: {%s: %s}", event->header_key, event->header_value);
+        ESP_LOGD(tag.c_str(), "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
+        break;
+    case HTTP_EVENT_REDIRECT:
+        ESP_LOGD(tag.c_str(), "HTTP_EVENT_REDIRECT");
+        esp_http_client_set_header(evt->client, "From", "user@example.com");
+        esp_http_client_set_header(evt->client, "Accept", "text/html");
+        esp_http_client_set_redirection(evt->client);
         break;
     case HTTP_EVENT_ON_DATA:
-        ESP_LOGI(tag.c_str(), "HTTP_EVENT_ON_DATA"); // Occurs when receiving data from the server, possibly multiple portions of the packet
-        memset(bufferOut, 0, MAX_HTTP_OUTPUT_BUFFER);
-
-        if (!esp_http_client_is_chunked_response(event->client))
+        ESP_LOGD(tag.c_str(), "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
+        // Clean the buffer in case of a new request
+        if (output_len == 0 && evt->user_data)
+        {
+            // we are just starting to copy the output data into the use
+            memset(evt->user_data, 0, MAX_HTTP_OUTPUT_BUFFER);
+        }
+        /*
+         *  Check for chunked encoding is added as the URL for chunked encoding used in this example returns binary data.
+         *  However, event handler can also be used in case chunked encoding is used.
+         */
+        if (!esp_http_client_is_chunked_response(evt->client))
         {
             // If user_data buffer is configured, copy the response into the buffer
-            int copy_len = 0;
-            if (event->user_data)
-            {
-                // The last byte in event->user_data is kept for the NULL character in case of out-of-bound access.
-                copy_len = abs(event->data_len - bufferOutLen);
-                if (copy_len)
-                {
-                    memcpy(event->user_data, event->data, copy_len);
-                }
-            }
-            else
-            {
-                int content_len = esp_http_client_get_content_length(event->client);
-                if (bufferOut == NULL)
-                {
-                    //     // We initialize bufferOut with 0 because it is used by strlen() and similar functions therefore should be null terminated.
-                    bufferOut = (char *)calloc(content_len + 1, sizeof(char));
-                    bufferOutLen = 0;
-                    if (bufferOut == NULL)
-                    {
-                        ESP_LOGI(tag.c_str(), "Failed to allocate memory for output buffer");
-                    }
-                }
-                copy_len = abs(event->data_len - bufferOutLen);
-                if (copy_len)
-                {
-                    memcpy(bufferOut + bufferOutLen, event->data, copy_len);
-                }
-            }
-            bufferOutLen += copy_len;
+            // int copy_len = 0;
+            // if (evt->user_data) {
+            //     // The last byte in evt->user_data is kept for the NULL character in case of out-of-bound access.
+            //     copy_len = MIN(evt->data_len, (MAX_HTTP_OUTPUT_BUFFER - output_len));
+            //     if (copy_len) {
+            //         memcpy(evt->user_data + output_len, evt->data, copy_len);
+            //     }
+            // } else {
+            //     int content_len = esp_http_client_get_content_length(evt->client);
+            //     if (output_buffer == NULL) {
+            //         // We initialize output_buffer with 0 because it is used by strlen() and similar functions therefore should be null terminated.
+            //         output_buffer = (char *) calloc(content_len + 1, sizeof(char));
+            //         output_len = 0;
+            //         if (output_buffer == NULL) {
+            //             ESP_LOGE(tag.c_str(), "Failed to allocate memory for output buffer");
+            //             return ESP_FAIL;
+            //         }
+            //     }
+            //     copy_len = MIN(evt->data_len, (content_len - output_len));
+            //     if (copy_len) {
+            //         memcpy(output_buffer + output_len, evt->data, copy_len);
+            //     }
+            // }
+            // output_len += copy_len;
         }
-        break;
-    case HTTP_EVENT_ON_FINISH: // Occurs when finish a HTTP session
-        ESP_LOGI(tag.c_str(), "HTTP_EVENT_ON_FINISH");
-        if (bufferOut != NULL)
-        {
-            free(bufferOut);
-        }
-        bufferOut = 0;
-        break;
-    case HTTP_EVENT_DISCONNECTED: // The connection has been disconnected
-        ESP_LOGE(tag.c_str(), "HTTP_EVENT_DISCONNECTED");
-        bufferOut = 0;
-        break;
-    case HTTP_EVENT_REDIRECT: // Intercepting HTTP redirects to handle them manually
-        ESP_LOGI(tag.c_str(), "HTTP_EVENT_ON_FINISH");
-        break;
 
-    default:
+        break;
+    case HTTP_EVENT_ON_FINISH:
+        ESP_LOGD(tag.c_str(), "HTTP_EVENT_ON_FINISH");
+        if (output_buffer != NULL)
+        {
+            // Response is accumulated in output_buffer. Uncomment the below line to print the accumulated response
+            // ESP_LOG_BUFFER_HEX(tag.c_str(), output_buffer, output_len);
+            free(output_buffer);
+            output_buffer = NULL;
+        }
+        output_len = 0;
+        break;
+    case HTTP_EVENT_DISCONNECTED:
+        ESP_LOGI(tag.c_str(), "HTTP_EVENT_DISCONNECTED");
+        int mbedtls_err = 0;
+        esp_err_t err = esp_tls_get_and_clear_last_error((esp_tls_error_handle_t)evt->data, &mbedtls_err, NULL);
+        if (err != 0)
+        {
+            ESP_LOGI(tag.c_str(), "Last esp error code: 0x%x", err);
+            ESP_LOGI(tag.c_str(), "Last mbedtls failure: 0x%x", mbedtls_err);
+        }
+        if (output_buffer != NULL)
+        {
+            free(output_buffer);
+            output_buffer = NULL;
+        }
+        output_len = 0;
         break;
     }
     return ESP_OK;
 }
 
-ApiConfig Http::GetConfig()
-{
-    ApiConfig config;
-    config.host = this->target;
-    return config;
-}
 
-void Http::Get(string path)
+bool Http::httpGet(string url)
 {
     char local_response_buffer[MAX_HTTP_OUTPUT_BUFFER + 1] = {0};
     esp_http_client_config_t config = {
-        .host = this->target.c_str(),
-        .path = path.c_str(),
-        .query = "",
+        .url = url.c_str(),
+        .query = nullptr,
         .disable_auto_redirect = true,
-        .event_handler = WebApiEventHandler,
+        .event_handler = webApiEventHandler,
         .user_data = local_response_buffer,
     };
-    xTaskCreate(&_Get, "GET", 4096, &config, 5, NULL);
+    ESP_LOGW(tag.c_str(), "GET %s", url.c_str());
+    xTaskCreate(&get, "GET", 4096, &config, 5, NULL);
+    return false;
 }
 
-void Http::_Get(void *pvParameters)
+void Http::get(void *pvParameters)
 {
     esp_http_client_handle_t client = esp_http_client_init((esp_http_client_config_t *)pvParameters);
+        ESP_LOGE(tag.c_str(), "1");
     esp_http_client_set_method(client, HTTP_METHOD_GET);
+        ESP_LOGE(tag.c_str(), "2");
 
     if (esp_http_client_perform(client) == ESP_OK)
     {
-        ESP_LOGI(tag.c_str(), "HTTP GET STATUS %d, content length %" PRId64, esp_http_client_get_status_code(client), esp_http_client_get_content_length(client));
+        // esp_http_client_get_user_data(client, &data);
+        ESP_LOGI(tag.c_str(), "HTTP GET STATUS %d, content length %lld" PRId64, esp_http_client_get_status_code(client), esp_http_client_get_content_length(client));
     }
     else
     {

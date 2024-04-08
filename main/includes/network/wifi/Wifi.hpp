@@ -39,7 +39,7 @@ typedef struct _WifiConfig
 	NetworkProperties StaConfig;
 } WifiConfig;
 
-class WifiService : public Tcp
+class WifiService : public Tcp, public Http
 {
 private:
 	static constexpr string tag = "WIFI SERVICE";
@@ -47,6 +47,7 @@ private:
 	uint8_t ApAuthenticationMode;
 	string ApPassword;
 	string StaPassword;
+	uint8_t StaMacTarget[6];
 	wifi_config_t wifi_config;
 	void setApConfig(WifiConfig config);
 	void setStationConfig(WifiConfig config);
@@ -61,6 +62,7 @@ public:
 	WifiService();
 	bool init(WifiConfig config);
 	uint16_t scanWifiNetworks(ApRecordList *apRecords);
+	void setStaMacTarget(uint8_t *StaMacTarget);
 	ApRecordList getRecordScannned(uint8_t index);
 	WifiConfig getConfig();
 	~WifiService();

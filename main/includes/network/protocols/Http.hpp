@@ -5,8 +5,9 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <esp_http_client.h>
+#include <esp_tls.h>
 
-using namespace std;
+#include "ProtocolsInterface.hpp"
 
 #define MAX_HTTP_RECV_BUFFER 512
 #define MAX_HTTP_OUTPUT_BUFFER 2048
@@ -16,20 +17,16 @@ typedef struct _ApiConfig
     string host;
 } ApiConfig;
 
-class Http
+class Http 
 {
 private:
-    static constexpr string tag = "API CLIENT";
-    static string path;
-    static void _Get(void *pvParameters);
-    static esp_err_t WebApiEventHandler(esp_http_client_event_t *event);
-    string target;
+    static constexpr string tag = "API";
+    static void get(void *pvParameters);
+    static esp_err_t webApiEventHandler(esp_http_client_event_t *event);
 
 public:
     Http();
-    void setPath(string path);
-    ApiConfig GetConfig();
-    void Get(string path);
+    static bool httpGet(string url);
     ~Http();
 };
 

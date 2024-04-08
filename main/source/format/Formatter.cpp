@@ -40,7 +40,7 @@ string Formatter::deviceInformation(DeviceInformation deviceInfo)
             station["Mask"] = ipAddressToString(deviceInfo.wifiConfig.StaConfig.ip.mask);
             station["Gateway"] = ipAddressToString(deviceInfo.wifiConfig.StaConfig.ip.gateway);
             station["Mac"] = macToString(deviceInfo.wifiConfig.StaConfig.mac, sizeof(deviceInfo.wifiConfig.StaConfig.mac));
-            station["RouterMac"] = macToString(deviceInfo.wifiConfig.StaConfig.targetMac, sizeof(deviceInfo.wifiConfig.StaConfig.targetMac));
+            station["TargetMac"] = macToString(deviceInfo.wifiConfig.StaConfig.targetMac, sizeof(deviceInfo.wifiConfig.StaConfig.targetMac));
             station["Ssid"] = deviceInfo.wifiConfig.StaConfig.ssid;
             station["Auth"] = deviceInfo.wifiConfig.StaConfig.authentication;
             station["Mode"] = deviceInfo.wifiConfig.mode;
@@ -145,22 +145,22 @@ string Formatter::ipAddressToString(uint8_t *ipAddress)
     return ipString;
 }
 
-string Formatter::macToString(uint8_t *macAddress, uint8_t macSize)
+string Formatter::macToString(uint8_t *macAddress, size_t macSize)
 {
-    string ipString;
+    string macString;
     if (macSize == 6)
     {
         char mac[18];
         memset(mac, 0, 18);
         sprintf(mac, "%02X:%02X:%02X:%02X:%02X:%02X", macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]);
-        ipString = string(mac);
+        macString = string(mac);
     }
     else
     {
-        ipString = "Invalid MAC size";
+        macString = "Invalid MAC size";
     }
 
-    return ipString;
+    return macString;
 }
 
 void Formatter::jsonToCharArray(DynamicJsonDocument doc, char *buffer)

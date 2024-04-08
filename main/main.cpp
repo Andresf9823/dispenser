@@ -1,10 +1,7 @@
 #include <GlobalDefines.hpp>
-#include <network/wifi/Wifi.hpp>
 #include <fileSystem/LocalStorage.hpp>
 
 using namespace std;
-
-TcpServerConfiguration appServer;
 
 static string tag = "MAIN";
 
@@ -53,6 +50,13 @@ string SaveWifiApRecord(uint8_t index, string password)
 	CommandResult result;
 	ApRecordList record = Wifi->getRecordScannned(index);
 	Storage->saveStationTarget(record, password);
+	Wifi->setStaMacTarget(record.mac);
+
+	logString(tag, "AP RECORD SSID SAVED -> " + string(record.ssid));
+	logString(tag, "AP RECORD RSSI SAVED -> " + to_string(record.rssi));
+	logString(tag, "AP RECORD AUTH SAVED -> " + to_string(record.authMode));
+	logString(tag, "AP RECORD TMAC SAVED ->" + Formatter::macToString(record.mac, 6));
+
 	result.command = ProtocolCommand::saveWifiApRecord;
 	result.deviceId = Storage->readDwordRecord(NVS_DEVICE_ID);
 	result.status = true;
@@ -87,9 +91,29 @@ string SetMac(uint8_t *mac, WifiMode mode)
 	default:
 		break;
 	}
-	Storage->writeStringRecord(key,Formatter::macToString(mac, sizeof(mac)));
-	result.message = "Saved mac on wInterface " + to_string(mode);
+	if (Storage->writeStringRecord(key, Formatter::macToString(mac, 6)))
+		result.message = "Saved mac " + Storage->readStringRecord(key) + " on network interface " + to_string(mode);
+	else
+		result.message = "Mac " + Storage->readStringRecord(key) + " on network interface was not save" + to_string(mode);
 	logString(tag, result.message);
+	return Formatter::reportMessageFromCommand(result);
+}
+
+string GetDeviceConfiguration()
+{
+	CommandResult result;
+	result.command = ProtocolCommand::getDeviceConfiguration;
+	result.deviceId = Storage->readDwordRecord(NVS_DEVICE_ID);
+	if (Wifi->httpGet("https://api.chucknorris.io/jokes/random"))
+	{
+		result.message = "Device configuration downloaded";
+		result.status = true;
+	}
+	else
+	{
+		result.message = "Device configuration not downloaded";
+		result.status = false;
+	}
 	return Formatter::reportMessageFromCommand(result);
 }
 
@@ -150,10 +174,13 @@ string DeviceConfigApiStack(char *buffer)
 		case ProtocolCommand::setDefaultMemoryValues: // 7B 00 7C 0C 7C 7D
 			return SetDefaultMemoryValues();
 			break;
-		case ProtocolCommand::setMac: // 7B 00 7C 1C 7C 01 7C 01 00 01 10 00 10 7C 7D
+		case ProtocolCommand::getDeviceConfiguration: // 7B 00 7C 1C 7C 7D
+			return GetDeviceConfiguration();
+			break;
+		case ProtocolCommand::setMac: // 7B 00 7C 2C 7C 01 7C 00 A3 01 10 00 10 7C 7D
 			uint8_t mac[6];
-			for(uint8_t i = 0;i<6;i++)
-				mac[i] = buffer[7] + i;
+			for (uint8_t i = 0; i < 6; i++)
+				mac[i] = (uint8_t)buffer[7 + i];
 			return SetMac(mac, (WifiMode)buffer[5]);
 			break;
 		case ProtocolCommand::saveWifiApRecord: // 7B 00 7C 2B 7C 00 7C 7D
@@ -194,10 +221,15 @@ void initObjects()
 	WifiConfig wifiConfig = Storage->readWifiConfig();
 	if (Wifi->init(wifiConfig))
 	{
-		appServer.port = 1100;
-		appServer.callback = DeviceConfigApiStack;
+		TcpServerConfiguration appServer = {
+			.port = 1100,
+			.callback = DeviceConfigApiStack,
+		};
 		Wifi->createTcpServer(appServer);
-		if (wifiConfig.mode != WifiMode::Ap)
+
+		if (wifiConfig.mode == WifiMode::Ap)
+		{
+		}else
 		{
 			// ApRecordList apRecords[MAXIMUM_SIZE_OF_SCAN_LIST];
 			// Wifi->scanWifiNetworks(apRecords);

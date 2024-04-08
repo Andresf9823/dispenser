@@ -30,7 +30,8 @@ typedef enum protocolCommand
     sendWifiApRecords = 0x1B,
     saveWifiApRecord = 0x2B,
     setDefaultMemoryValues = 0x0C,
-    setMac = 0x1C
+    getDeviceConfiguration = 0x1C,
+    setMac = 0x2C
 } ProtocolCommand;
 
 typedef struct _TcpServerConfiguration

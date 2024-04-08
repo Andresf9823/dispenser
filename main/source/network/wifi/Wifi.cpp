@@ -2,6 +2,7 @@
 
 WifiService::WifiService()
 {
+    memset(StaMacTarget, 0, sizeof(StaMacTarget));
 }
 
 void WifiService::wifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
@@ -14,6 +15,39 @@ void WifiService::wifiEventHandler(void *arg, esp_event_base_t event_base, int32
             wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *)event_data;
             if (event != NULL)
             {
+                esp_wifi_connect();
+            }
+        }
+        else if (event_id == WIFI_EVENT_STA_START)
+        {
+            ESP_LOGW("WIFI STATION START",
+                     "%s",
+                     "Wifi Started");
+            esp_wifi_connect();
+        }
+        else if (event_id == WIFI_EVENT_STA_CONNECTED)
+        {
+            wifi_event_sta_connected_t *event = (wifi_event_sta_connected_t *)event_data;
+            if (event != NULL)
+            {
+                ESP_LOGW("STA CONNECTED", "%s", event->ssid);
+                ESP_LOGW("STA CONNECTED", "ID: %d MAC:%02X:%02X:%02X:%02X:%02X:%02X",
+                         event->aid, event->bssid[0], event->bssid[1], event->bssid[2],
+                         event->bssid[3], event->bssid[4], event->bssid[5]);
+                ESP_LOGW("STA CONNECTED", "AUTH MODE: %d", event->authmode);
+            }
+        }
+        else if (event_id == WIFI_EVENT_STA_DISCONNECTED)
+        {
+            wifi_event_sta_disconnected_t *event = (wifi_event_sta_disconnected_t *)event_data;
+            if (event != NULL)
+            {
+                ESP_LOGW("STA DISCONNECTED", "%s", event->ssid);
+                ESP_LOGW("STA DISCONNECTED", "MAC:%02X:%02X:%02X:%02X:%02X:%02X",
+                         event->bssid[0], event->bssid[1], event->bssid[2],
+                         event->bssid[3], event->bssid[4], event->bssid[5]);
+                ESP_LOGW("STA DISCONNECTED", "REASON: %d", event->reason);
+                esp_wifi_connect();
             }
         }
         else if (event_id == WIFI_EVENT_AP_STACONNECTED)
@@ -35,13 +69,13 @@ void WifiService::wifiEventHandler(void *arg, esp_event_base_t event_base, int32
             wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *)event_data;
             if (event != NULL)
             {
-                ESP_LOGI("AP DISCONECTED",
+                ESP_LOGW("AP DISCONECTED",
                          "ID: %d MAC:%02X:%02X:%02X:%02X:%02X:%02X", event->aid,
                          event->mac[0], event->mac[1], event->mac[2], event->mac[3],
                          event->mac[4], event->mac[5]);
                 if (event->is_mesh_child)
                 {
-                    ESP_LOGI("AP DISCONECTED", "WAS A MESH CHILD");
+                    ESP_LOGW("AP DISCONECTED", "WAS A MESH CHILD");
                 }
             }
         }
@@ -190,10 +224,8 @@ void WifiService::setStationConfig(WifiConfig config)
     memset(_pass, 0, sizeof(_pass));
     memcpy(_ssid, config.StaConfig.ssid.c_str(), sizeof(config.StaConfig.ssid));
     memcpy(_pass, config.StaConfig.password.c_str(), sizeof(config.StaConfig.password));
+    memcpy(StaMacTarget, config.StaConfig.targetMac, sizeof(StaMacTarget));
     this->StaPassword = string((const char *)_pass);
-
-    logString("ssid",config.StaConfig.ssid);
-    logString("pssd", config.StaConfig.password);
 
     wifi_config = {.sta =
                        {
@@ -242,13 +274,14 @@ NetworkProperties WifiService::getStaConfig()
 
     if (ESP_OK != esp_wifi_sta_get_ap_info(&ap))
     {
-        station.ssid = "NULL";
+        station.ssid = "";
         station.authentication = 0;
-        station.password = "NULL";
+        station.password = "";
         memset(station.mac, 0, sizeof(station.mac));
         memset(station.ip.ip, 0, sizeof(station.ip.ip));
         memset(station.ip.mask, 0, sizeof(station.ip.mask));
         memset(station.ip.gateway, 0, sizeof(station.ip.gateway));
+        memset(station.targetMac, 0, sizeof(station.targetMac));
     }
     else
     {
@@ -263,6 +296,7 @@ NetworkProperties WifiService::getStaConfig()
         memcpy(station.ip.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
         memcpy(station.ip.gateway, &ipInfo.gw, sizeof(ipInfo.gw));
     }
+    memcpy(station.targetMac, StaMacTarget, sizeof(StaMacTarget));
     this->logString(tag, "Finish");
     return station;
 }
@@ -370,7 +404,6 @@ bool WifiService::init(WifiConfig config)
     }
     if (esp_wifi_start() == ESP_OK)
         return true;
-
     return false;
 }
 
@@ -404,6 +437,12 @@ uint16_t WifiService::scanWifiNetworks(ApRecordList *apRecords)
     }
     memcpy(apRecordsScanned, apRecords, sizeof(apRecordsScanned));
     return numberOfApScanned;
+}
+
+void WifiService::setStaMacTarget(uint8_t *StaMacTarget)
+{
+
+    memcpy(this->StaMacTarget, StaMacTarget, sizeof(this->StaMacTarget));
 }
 
 bool WifiService::macSafeValidator(wifi_interface_t interface, uint8_t *mac)
