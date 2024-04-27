@@ -29,7 +29,8 @@ void LocalStorage::setDefaultValues()
     ESP_LOGI(tag.c_str(), "%s", "WRITING INFO");
 
     this->writeDwordRecord(NVS_DEVICE_ID, 1234091869);
-    this->writeByteRecord(NVS_WIFI_MODE, WifiMode::ApStation);
+    this->writeByteRecord(NVS_WIFI_MODE, WifiMode::Ap);
+    this->writeByteRecord(NVS_WIFI_CHANNEL, 0);
 
     this->writeStringRecord(NVS_AP_SSID, "BERDUGO_ESP");
     this->writeStringRecord(NVS_AP_PASSWORD, "123456789");
@@ -54,13 +55,72 @@ void LocalStorage::setDefaultValues()
     ESP_LOGI(tag.c_str(), "%s", "FINSIHED");
 }
 
-WifiConfig LocalStorage::readWifiConfig()
+NetworkProperties LocalStorage::readApConfig()
 {
-    WifiConfig config;
+
+    NetworkProperties ApConfig;
     uint8_t ip[4];
     uint8_t mac[6];
     uint8_t macSize = sizeof(mac);
     uint8_t ipSize = sizeof(ip);
+
+    memset(ApConfig.mac, 0, sizeof(ApConfig.mac));
+    memset(ApConfig.ip.ip, 0, sizeof(ApConfig.ip.ip));
+    memset(ApConfig.ip.mask, 0, sizeof(ApConfig.ip.mask));
+    memset(ApConfig.ip.gateway, 0, sizeof(ApConfig.ip.gateway));
+    ESP_LOGI(tag.c_str(), "%s", "Reading Ap Configuration");
+    ApConfig.authentication = static_cast<WifiMode>(this->readByteRecord(NVS_AP_AUTH_MODE));
+    ApConfig.ssid = this->readStringRecord(NVS_AP_SSID);
+    ApConfig.password = this->readStringRecord(NVS_AP_PASSWORD);
+    ApConfig.dhcpEnabled = this->readBooleanRecord(NVS_AP_DHCP_ENABLE);
+
+    ESP_LOGI(tag.c_str(), "%s", "Reading AP ipAddress");
+    Formatter::stringToMac(mac, this->readStringRecord(NVS_AP_MAC));
+    memcpy(ApConfig.mac, mac, macSize);
+    Formatter::stringToIpAddress(ip, this->readStringRecord(NVS_AP_IP_ADDRESS));
+    memcpy(ApConfig.ip.ip, ip, ipSize);
+    Formatter::stringToIpAddress(ip, this->readStringRecord(NVS_AP_SUBNET));
+    memcpy(ApConfig.ip.mask, ip, ipSize);
+    Formatter::stringToIpAddress(ip, this->readStringRecord(NVS_AP_GATEWAY));
+    memcpy(ApConfig.ip.gateway, ip, ipSize);
+
+    return ApConfig;
+}
+
+NetworkProperties LocalStorage::readStaConfig()
+{
+    NetworkProperties StaConfig;
+    uint8_t ip[4];
+    uint8_t mac[6];
+    uint8_t macSize = sizeof(mac);
+    uint8_t ipSize = sizeof(ip);
+
+    memset(StaConfig.mac, 0, sizeof(StaConfig.mac));
+    memset(StaConfig.ip.ip, 0, sizeof(StaConfig.ip.ip));
+    memset(StaConfig.ip.mask, 0, sizeof(StaConfig.ip.mask));
+    memset(StaConfig.ip.gateway, 0, sizeof(StaConfig.ip.gateway));
+    ESP_LOGI(tag.c_str(), "%s", "Reading STA Configuration");
+    StaConfig.authentication = static_cast<WifiMode>(this->readByteRecord(NVS_STA_AUTH_MODE));
+    StaConfig.ssid = this->readStringRecord(NVS_STA_SSID);
+    StaConfig.password = this->readStringRecord(NVS_STA_PASSWORD);
+    StaConfig.dhcpEnabled = this->readBooleanRecord(NVS_STA_DHCP_ENABLE);
+
+    ESP_LOGI(tag.c_str(), "%s", "Reading STA ipAddress");
+    Formatter::stringToMac(mac, this->readStringRecord(NVS_STA_MAC));
+    memcpy(StaConfig.mac, mac, macSize);
+    Formatter::stringToIpAddress(ip, this->readStringRecord(NVS_STA_IP_ADDRESS));
+    memcpy(StaConfig.ip.ip, ip, ipSize);
+    Formatter::stringToIpAddress(ip, this->readStringRecord(NVS_STA_SUBNET));
+    memcpy(StaConfig.ip.mask, ip, ipSize);
+    Formatter::stringToIpAddress(ip, this->readStringRecord(NVS_STA_GATEWAY));
+    memcpy(StaConfig.ip.gateway, ip, ipSize);
+
+    return StaConfig;
+}
+
+WifiConfig LocalStorage::readWifiConfig()
+{
+    WifiConfig config;
 
     memset(config.ApConfig.mac, 0, sizeof(config.ApConfig.mac));
     memset(config.ApConfig.ip.ip, 0, sizeof(config.ApConfig.ip.ip));
@@ -74,40 +134,9 @@ WifiConfig LocalStorage::readWifiConfig()
 
     ESP_LOGI(tag.c_str(), "%s", "Reading Wifi Configuration");
     config.mode = static_cast<WifiMode>(this->readByteRecord(NVS_WIFI_MODE));
-
-    ESP_LOGI(tag.c_str(), "%s", "Reading Ap Configuration");
-    config.ApConfig.authentication = static_cast<WifiMode>(this->readByteRecord(NVS_AP_AUTH_MODE));
-    config.ApConfig.ssid = this->readStringRecord(NVS_AP_SSID);
-    config.ApConfig.password = this->readStringRecord(NVS_AP_PASSWORD);
-    config.ApConfig.dhcpEnabled = this->readBooleanRecord(NVS_AP_DHCP_ENABLE);
-
-    ESP_LOGI(tag.c_str(), "%s", "Reading AP ipAddress");
-    Formatter::stringToMac(mac, this->readStringRecord(NVS_AP_MAC));
-    memcpy(config.ApConfig.mac, mac, macSize);
-    Formatter::stringToIpAddress(ip, this->readStringRecord(NVS_AP_IP_ADDRESS));
-    memcpy(config.ApConfig.ip.ip, ip, ipSize);
-    Formatter::stringToIpAddress(ip, this->readStringRecord(NVS_AP_SUBNET));
-    memcpy(config.ApConfig.ip.mask, ip, ipSize);
-    Formatter::stringToIpAddress(ip, this->readStringRecord(NVS_AP_GATEWAY));
-    memcpy(config.ApConfig.ip.gateway, ip, ipSize);
-
-    ESP_LOGI(tag.c_str(), "%s", "Reading Sta Configuration");
-    config.StaConfig.authentication = static_cast<WifiMode>(this->readByteRecord(NVS_STA_AUTH_MODE));
-    config.StaConfig.ssid = this->readStringRecord(NVS_STA_SSID);
-    config.StaConfig.password = this->readStringRecord(NVS_STA_PASSWORD);
-    config.StaConfig.dhcpEnabled = this->readBooleanRecord(NVS_STA_DHCP_ENABLE);
-
-    ESP_LOGI(tag.c_str(), "%s", "Reading Sta ipAddress");
-    Formatter::stringToMac(mac, this->readStringRecord(NVS_STA_MAC));
-    memcpy(config.StaConfig.mac, mac, macSize);
-    Formatter::stringToMac(mac, this->readStringRecord(NVS_STA_TARGET_MAC));
-    memcpy(config.StaConfig.targetMac, mac, macSize);
-    Formatter::stringToIpAddress(ip, this->readStringRecord(NVS_STA_IP_ADDRESS));
-    memcpy(config.StaConfig.ip.ip, ip, ipSize);
-    Formatter::stringToIpAddress(ip, this->readStringRecord(NVS_STA_SUBNET));
-    memcpy(config.StaConfig.ip.mask, ip, ipSize);
-    Formatter::stringToIpAddress(ip, this->readStringRecord(NVS_STA_GATEWAY));
-    memcpy(config.StaConfig.ip.gateway, ip, ipSize);
+    config.primaryChannel = this->readByteRecord(NVS_WIFI_CHANNEL);
+    config.ApConfig = this->readApConfig();
+    config.StaConfig = this->readStaConfig();
 
     ESP_LOGI(tag.c_str(), "%s", "Finish Wifi Configuration reading");
     return config;
@@ -127,6 +156,7 @@ void LocalStorage::saveStationTarget(ApRecordList record, string password)
     this->writeStringRecord(NVS_STA_SSID, string(record.ssid));
     this->writeByteRecord(NVS_STA_AUTH_MODE, record.authMode);
     this->writeStringRecord(NVS_STA_PASSWORD, password);
+    this->writeByteRecord(NVS_WIFI_CHANNEL, record.primaryChannel);
 }
 
 string LocalStorage::readStringRecord(string _key)
@@ -187,7 +217,7 @@ bool LocalStorage::writeByteRecord(string _key, uint8_t record)
         nvs_close(handle);
         return writed;
     }
-    ESP_LOGE(tag.c_str(), "Failed writing  uint32: '%s'", key);
+    ESP_LOGE(tag.c_str(), "Failed writing  uint8_t: '%s'", key);
     return false;
 }
 

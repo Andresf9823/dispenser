@@ -15,6 +15,8 @@ private:
     nvs_handle_t handle;
     bool open(string key, nvs_open_mode_t mode);
     bool errorCheck(esp_err_t err, string key);
+    NetworkProperties readApConfig();
+    NetworkProperties readStaConfig();
 
 public:
     LocalStorage();

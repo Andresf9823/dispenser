@@ -4,7 +4,10 @@
 #include <GlobalDefines.hpp>
 #include <esp_event.h>
 #include <nvs_flash.h>
+#include <esp_timer.h>
 #include <esp_wifi.h>
+#include <freertos/FreeRTOS.h>
+#include "freertos/task.h"
 #include "../NetworkInterface.hpp"
 
 #define MAXIMUM_SIZE_OF_SCAN_LIST 10
@@ -30,11 +33,13 @@ typedef struct _ApRecordList
 	uint8_t mac[6];
 	uint8_t authMode;
 	uint8_t rssi;
+	uint8_t primaryChannel;
 } ApRecordList;
 
 typedef struct _WifiConfig
 {
 	WifiMode mode;
+	uint8_t primaryChannel;
 	NetworkProperties ApConfig;
 	NetworkProperties StaConfig;
 } WifiConfig;
@@ -49,8 +54,6 @@ private:
 	string StaPassword;
 	uint8_t StaMacTarget[6];
 	wifi_config_t wifi_config;
-	void setApConfig(WifiConfig config);
-	void setStationConfig(WifiConfig config);
 	void setIpAddress(WifiMode mode, NetworkProperties ipConfig);
 	bool macSafeValidator(wifi_interface_t interface, uint8_t *mac);
 	NetworkProperties getApConfig();
@@ -61,8 +64,10 @@ private:
 public:
 	WifiService();
 	bool init(WifiConfig config);
-	uint16_t scanWifiNetworks(ApRecordList *apRecords);
+	void setApConfig(WifiConfig config);
+	void setStationConfig(WifiConfig config);
 	void setStaMacTarget(uint8_t *StaMacTarget);
+	uint16_t scanWifiNetworks(ApRecordList *apRecords);
 	ApRecordList getRecordScannned(uint8_t index);
 	WifiConfig getConfig();
 	~WifiService();

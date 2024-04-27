@@ -86,5 +86,5 @@
         "variant": "cpp",
         "codecvt": "cpp"
     },
-    "idf.port": "/dev/ttyS5"
+    "idf.port": "/dev/ttyUSB0"
 }

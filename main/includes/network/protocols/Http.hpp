@@ -4,8 +4,8 @@
 #include <GlobalDefines.hpp>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include <esp_http_client.h>
 #include <esp_tls.h>
+#include <esp_http_client.h>
 
 #include "ProtocolsInterface.hpp"
 
@@ -20,7 +20,7 @@ typedef struct _ApiConfig
 class Http 
 {
 private:
-    static constexpr string tag = "API";
+    static constexpr string tag = "HTTP";
     static void get(void *pvParameters);
     static esp_err_t webApiEventHandler(esp_http_client_event_t *event);
 

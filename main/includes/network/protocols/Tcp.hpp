@@ -29,6 +29,7 @@ typedef enum protocolCommand
     sendDeviceInfo = 0x0B,
     sendWifiApRecords = 0x1B,
     saveWifiApRecord = 0x2B,
+    setWifiMode = 0x3B,
     setDefaultMemoryValues = 0x0C,
     getDeviceConfiguration = 0x1C,
     setMac = 0x2C

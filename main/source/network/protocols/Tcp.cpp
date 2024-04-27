@@ -65,9 +65,10 @@ void Tcp::serverTask(const int sock, string (*callbackFunction)(char *))
 
             if (isValidFrame(rxTcpbuffer, len))
             {
-                string data = callbackFunction(rxTcpbuffer);
-                if(!data.empty()){
-                    sendTcpMessage(data, socketState);
+                string data_ = callbackFunction(rxTcpbuffer);
+                if (!data_.empty())
+                {
+                    sendTcpMessage(data_, socketState);
                 }
             }
             /*

@@ -70,6 +70,7 @@ string Formatter::apRecordsList(ApRecordList *apNetworks, uint16_t apQuantity)
         data["Ssid"] = apNetworks[i].ssid;
         data["Authmode"] = apNetworks[i].authMode;
         data["Rssi"] = apNetworks[i].rssi;
+        data["Channel"] = apNetworks[i].primaryChannel;
         apItems.add(data);
     }
     serializeJson(doc, docString);

@@ -3,6 +3,7 @@
 WifiService::WifiService()
 {
     memset(StaMacTarget, 0, sizeof(StaMacTarget));
+    memset(apRecordsScanned, 0, sizeof(apRecordsScanned));
 }
 
 void WifiService::wifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
@@ -15,11 +16,11 @@ void WifiService::wifiEventHandler(void *arg, esp_event_base_t event_base, int32
             wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *)event_data;
             if (event != NULL)
             {
-                esp_wifi_connect();
             }
         }
         else if (event_id == WIFI_EVENT_STA_START)
         {
+
             ESP_LOGW("WIFI STATION START",
                      "%s",
                      "Wifi Started");
@@ -42,12 +43,19 @@ void WifiService::wifiEventHandler(void *arg, esp_event_base_t event_base, int32
             wifi_event_sta_disconnected_t *event = (wifi_event_sta_disconnected_t *)event_data;
             if (event != NULL)
             {
+                ESP_LOGE("STA DISCONNECTED", "%s", "DISCONNECTED");
                 ESP_LOGW("STA DISCONNECTED", "%s", event->ssid);
-                ESP_LOGW("STA DISCONNECTED", "MAC:%02X:%02X:%02X:%02X:%02X:%02X",
+                ESP_LOGW("STA DISCONNECTED", "MAC: %02X:%02X:%02X:%02X:%02X:%02X",
                          event->bssid[0], event->bssid[1], event->bssid[2],
                          event->bssid[3], event->bssid[4], event->bssid[5]);
                 ESP_LOGW("STA DISCONNECTED", "REASON: %d", event->reason);
-                esp_wifi_connect();
+
+                xTaskCreate([](void *arg)
+                            {
+                            vTaskDelay(pdMS_TO_TICKS(10 * 1E3));
+                            esp_wifi_connect();
+                            vTaskDelete(NULL); },
+                            "Wifi reconnection timer", KB, NULL, 5, 0);
             }
         }
         else if (event_id == WIFI_EVENT_AP_STACONNECTED)
@@ -135,6 +143,48 @@ void WifiService::wifiEventHandler(void *arg, esp_event_base_t event_base, int32
             ESP_LOGI("DEVICE LOST IP", "IP, MASK AND GW LOST");
         }
     }
+}
+
+bool WifiService::init(WifiConfig config)
+{
+    esp_netif_init();
+    nvs_flash_init();
+    esp_event_loop_create_default();
+
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifiEventHandler, NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifiEventHandler, NULL, NULL));
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    this->logString(tag, "-> Initializing WiFi mode <-");
+
+    switch (config.mode)
+    {
+    case WifiMode::Ap:
+        esp_wifi_set_mode(WIFI_MODE_AP);
+        this->setApConfig(config);
+        break;
+    case WifiMode::Station:
+        esp_wifi_set_mode(WIFI_MODE_STA);
+        this->setStationConfig(config);
+        break;
+    case WifiMode::ApStation:
+        esp_wifi_set_mode(WIFI_MODE_APSTA);
+        this->setApConfig(config);
+        this->setStationConfig(config);
+        break;
+    default:
+        this->logString(tag, "Wifi mode unknown");
+        return false;
+        break;
+    }
+    this->logString(tag, "STARTING WIFI");
+    if (esp_wifi_start() == ESP_OK){
+        this->logString(tag, "Started");
+        return true;
+    }
+    return false;
 }
 
 void WifiService::setIpAddress(WifiMode mode, NetworkProperties ipConfig)
@@ -245,9 +295,9 @@ void WifiService::setStationConfig(WifiConfig config)
                            .bssid_set = 0,
                            .bssid = {config.StaConfig.targetMac[0], config.StaConfig.targetMac[1], config.StaConfig.targetMac[2],
                                      config.StaConfig.targetMac[3], config.StaConfig.targetMac[4], config.StaConfig.targetMac[5]}, /**< MAC address of target AP*/
-                           //    .channel = 0,
+                           .channel = config.primaryChannel,
                            //    .listen_interval = 3,
-                           //    .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
+                           .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
                            .threshold = (wifi_scan_threshold_t){.rssi = 99, .authmode = (wifi_auth_mode_t)config.StaConfig.authentication},
                            //    .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
                            //    .rm_enabled = (uint32_t)1,
@@ -259,11 +309,12 @@ void WifiService::setStationConfig(WifiConfig config)
                            //    .transition_disable = (uint32_t)1,
                            //    .reserved = (uint32_t)26,
                            //    .sae_pwe_h2e = WPA3_SAE_PWE_UNSPECIFIED,
-                           //    .failure_retry_cnt = 5,
+                           .failure_retry_cnt = 3,
                        }};
     this->macSafeValidator(WIFI_IF_STA, config.StaConfig.mac);
     esp_wifi_set_mac(WIFI_IF_STA, config.StaConfig.mac);
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+    esp_wifi_clear_fast_connect();
 }
 
 NetworkProperties WifiService::getStaConfig()
@@ -282,6 +333,7 @@ NetworkProperties WifiService::getStaConfig()
         memset(station.ip.mask, 0, sizeof(station.ip.mask));
         memset(station.ip.gateway, 0, sizeof(station.ip.gateway));
         memset(station.targetMac, 0, sizeof(station.targetMac));
+        memset(station.targetMac, 0, sizeof(StaMacTarget));
     }
     else
     {
@@ -295,8 +347,8 @@ NetworkProperties WifiService::getStaConfig()
         memcpy(station.ip.ip, &ipInfo.ip, sizeof(ipInfo.ip));
         memcpy(station.ip.mask, &ipInfo.netmask, sizeof(ipInfo.netmask));
         memcpy(station.ip.gateway, &ipInfo.gw, sizeof(ipInfo.gw));
+        memcpy(station.targetMac, StaMacTarget, sizeof(StaMacTarget));
     }
-    memcpy(station.targetMac, StaMacTarget, sizeof(StaMacTarget));
     this->logString(tag, "Finish");
     return station;
 }
@@ -330,14 +382,15 @@ void WifiService::setApConfig(WifiConfig config)
                                         _pass[48], _pass[49], _pass[50], _pass[51], _pass[52], _pass[53], _pass[54], _pass[55],
                                         _pass[56], _pass[56], _pass[58], _pass[50], _pass[60], _pass[61], _pass[62], _pass[63]},
                            .ssid_len = (uint8_t)strlen((char *)_ssid),
-                           //    .channel = (uint8_t)10,
+                           .channel = config.primaryChannel,
                            .authmode = (wifi_auth_mode_t)this->ApAuthenticationMode,
                            .ssid_hidden = 0,
                            .max_connection = (uint8_t)10,
                            .beacon_interval = 100,
                            .pairwise_cipher = WIFI_CIPHER_TYPE_NONE,
-                           //    .ftm_responder = 1,
-                           //    .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
+                           .ftm_responder = true,
+                           .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
+                           .sae_pwe_h2e = wifi_sae_pwe_method_t::WPA3_SAE_PWE_UNSPECIFIED,
                        }};
     this->macSafeValidator(WIFI_IF_AP, config.ApConfig.mac);
     esp_wifi_set_mac(WIFI_IF_AP, config.ApConfig.mac);
@@ -368,99 +421,6 @@ NetworkProperties WifiService::getApConfig()
     return apConfig;
 }
 
-bool WifiService::init(WifiConfig config)
-{
-    esp_netif_init();
-    nvs_flash_init();
-    esp_event_loop_create_default();
-
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifiEventHandler, NULL, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &wifiEventHandler, NULL, NULL));
-
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    this->logString(tag, "-> Initializing WiFi mode <-");
-
-    switch (config.mode)
-    {
-    case WifiMode::Ap:
-        esp_wifi_set_mode(WIFI_MODE_AP);
-        this->setApConfig(config);
-        break;
-    case WifiMode::Station:
-        esp_wifi_set_mode(WIFI_MODE_STA);
-        this->setStationConfig(config);
-        break;
-    case WifiMode::ApStation:
-        esp_wifi_set_mode(WIFI_MODE_APSTA);
-        this->setApConfig(config);
-        this->setStationConfig(config);
-        break;
-    default:
-        this->logString(tag, "Wifi mode unknown");
-        return false;
-        break;
-    }
-    if (esp_wifi_start() == ESP_OK)
-        return true;
-    return false;
-}
-
-ApRecordList WifiService::getRecordScannned(uint8_t index)
-{
-    logString(tag, "Record in last scan");
-    logString("SSID", string(apRecordsScanned[index].ssid));
-    logDword("RSSID", apRecordsScanned[index].rssi);
-    logDword("AUTHMODE", apRecordsScanned[index].authMode);
-    return apRecordsScanned[index];
-}
-
-uint16_t WifiService::scanWifiNetworks(ApRecordList *apRecords)
-{
-    this->logString(tag, "Start WiFi networks scanning");
-    uint16_t numberOfApScanned = 0;
-    uint16_t maximumSizeOfScanList = MAXIMUM_SIZE_OF_SCAN_LIST;
-    wifi_ap_record_t _apRecordsScanned[MAXIMUM_SIZE_OF_SCAN_LIST];
-    memset(_apRecordsScanned, 0, sizeof(_apRecordsScanned));
-    memset(apRecords, 0, MAXIMUM_SIZE_OF_SCAN_LIST);
-    esp_wifi_scan_start(NULL, true);
-    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&maximumSizeOfScanList, _apRecordsScanned));
-    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&numberOfApScanned));
-    numberOfApScanned = numberOfApScanned > MAXIMUM_SIZE_OF_SCAN_LIST ? MAXIMUM_SIZE_OF_SCAN_LIST : numberOfApScanned;
-    for (uint8_t i = 0; i < numberOfApScanned; i++)
-    {
-        memcpy(apRecords[i].mac, _apRecordsScanned[i].bssid, sizeof(_apRecordsScanned[i].bssid));
-        memcpy(apRecords[i].ssid, _apRecordsScanned[i].ssid, sizeof(_apRecordsScanned[i].ssid));
-        apRecords[i].rssi = _apRecordsScanned[i].rssi;
-        apRecords[i].authMode = _apRecordsScanned[i].authmode;
-    }
-    memcpy(apRecordsScanned, apRecords, sizeof(apRecordsScanned));
-    return numberOfApScanned;
-}
-
-void WifiService::setStaMacTarget(uint8_t *StaMacTarget)
-{
-
-    memcpy(this->StaMacTarget, StaMacTarget, sizeof(this->StaMacTarget));
-}
-
-bool WifiService::macSafeValidator(wifi_interface_t interface, uint8_t *mac)
-{
-    if ((mac[0] & (char)0x01) == 0x01)
-    {
-        mac[0] = DEFAULT_WIFI_MAC_0;
-        mac[1] = DEFAULT_WIFI_MAC_1;
-        mac[2] = DEFAULT_WIFI_MAC_2;
-        mac[3] = DEFAULT_WIFI_MAC_3;
-        mac[4] = DEFAULT_WIFI_MAC_4;
-        mac[5] = (interface == WIFI_IF_AP ? 0x01 : 0x02);
-        this->logString(tag, "Mac[0] byte error, setting defult Mac");
-        return false;
-    }
-    return true;
-}
-
 WifiConfig WifiService::getConfig()
 {
     WifiConfig config;
@@ -485,4 +445,59 @@ WifiConfig WifiService::getConfig()
         break;
     }
     return config;
+}
+
+ApRecordList WifiService::getRecordScannned(uint8_t index)
+{
+    logString(tag, "Record in last scan");
+    logString("SSID", string(apRecordsScanned[index].ssid));
+    logDword("RSSID", apRecordsScanned[index].rssi);
+    logDword("AUTHMODE", apRecordsScanned[index].authMode);
+
+    return apRecordsScanned[index];
+}
+
+uint16_t WifiService::scanWifiNetworks(ApRecordList *apRecords)
+{
+    this->logString(tag, "Start WiFi networks scanning");
+    uint16_t numberOfApScanned = 0;
+    uint16_t maximumSizeOfScanList = MAXIMUM_SIZE_OF_SCAN_LIST;
+    wifi_ap_record_t _apRecordsScanned[MAXIMUM_SIZE_OF_SCAN_LIST];
+    memset(_apRecordsScanned, 0, sizeof(_apRecordsScanned));
+    memset(apRecords, 0, MAXIMUM_SIZE_OF_SCAN_LIST);
+    esp_wifi_scan_start(NULL, true);
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_records(&maximumSizeOfScanList, _apRecordsScanned));
+    ESP_ERROR_CHECK(esp_wifi_scan_get_ap_num(&numberOfApScanned));
+    numberOfApScanned = numberOfApScanned > MAXIMUM_SIZE_OF_SCAN_LIST ? MAXIMUM_SIZE_OF_SCAN_LIST : numberOfApScanned;
+    for (uint8_t i = 0; i < numberOfApScanned; i++)
+    {
+        memcpy(apRecords[i].mac, _apRecordsScanned[i].bssid, sizeof(_apRecordsScanned[i].bssid));
+        memcpy(apRecords[i].ssid, _apRecordsScanned[i].ssid, sizeof(_apRecordsScanned[i].ssid));
+        apRecords[i].rssi = _apRecordsScanned[i].rssi;
+        apRecords[i].authMode = _apRecordsScanned[i].authmode;
+        apRecords[i].primaryChannel = _apRecordsScanned[i].primary;
+    }
+    memcpy(apRecordsScanned, apRecords, sizeof(apRecordsScanned));
+    return numberOfApScanned;
+}
+
+void WifiService::setStaMacTarget(uint8_t *StaMacTarget)
+{
+    memcpy(this->StaMacTarget, StaMacTarget, sizeof(this->StaMacTarget));
+}
+
+bool WifiService::macSafeValidator(wifi_interface_t interface, uint8_t *mac)
+{
+    if ((mac[0] & (char)0x01) == 0x01)
+    {
+        mac[0] = DEFAULT_WIFI_MAC_0;
+        mac[1] = DEFAULT_WIFI_MAC_1;
+        mac[2] = DEFAULT_WIFI_MAC_2;
+        mac[3] = DEFAULT_WIFI_MAC_3;
+        mac[4] = DEFAULT_WIFI_MAC_4;
+        mac[5] = (interface == WIFI_IF_AP ? 0x01 : 0x02);
+        this->logString(tag, "Mac[0] byte error, setting defult Mac");
+        return false;
+    }
+    return true;
 }

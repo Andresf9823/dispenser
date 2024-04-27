@@ -43,30 +43,30 @@ esp_err_t Http::webApiEventHandler(esp_http_client_event_t *evt)
         if (!esp_http_client_is_chunked_response(evt->client))
         {
             // If user_data buffer is configured, copy the response into the buffer
-            // int copy_len = 0;
-            // if (evt->user_data) {
-            //     // The last byte in evt->user_data is kept for the NULL character in case of out-of-bound access.
-            //     copy_len = MIN(evt->data_len, (MAX_HTTP_OUTPUT_BUFFER - output_len));
-            //     if (copy_len) {
-            //         memcpy(evt->user_data + output_len, evt->data, copy_len);
-            //     }
-            // } else {
-            //     int content_len = esp_http_client_get_content_length(evt->client);
-            //     if (output_buffer == NULL) {
-            //         // We initialize output_buffer with 0 because it is used by strlen() and similar functions therefore should be null terminated.
-            //         output_buffer = (char *) calloc(content_len + 1, sizeof(char));
-            //         output_len = 0;
-            //         if (output_buffer == NULL) {
-            //             ESP_LOGE(tag.c_str(), "Failed to allocate memory for output buffer");
-            //             return ESP_FAIL;
-            //         }
-            //     }
-            //     copy_len = MIN(evt->data_len, (content_len - output_len));
-            //     if (copy_len) {
-            //         memcpy(output_buffer + output_len, evt->data, copy_len);
-            //     }
-            // }
-            // output_len += copy_len;
+            int copy_len = 0;
+            if (evt->user_data) {
+                // The last byte in evt->user_data is kept for the NULL character in case of out-of-bound access.
+                // copy_len = MIN(evt->data_len, (MAX_HTTP_OUTPUT_BUFFER - output_len));
+                // if (copy_len) {
+                //     memcpy(evt->user_data + output_len, evt->data, copy_len);
+                // }
+            } else {
+                int content_len = esp_http_client_get_content_length(evt->client);
+                if (output_buffer == NULL) {
+                    // We initialize output_buffer with 0 because it is used by strlen() and similar functions therefore should be null terminated.
+                    output_buffer = (char *) calloc(content_len + 1, sizeof(char));
+                    output_len = 0;
+                    if (output_buffer == NULL) {
+                        ESP_LOGE(tag.c_str(), "Failed to allocate memory for output buffer");
+                        return ESP_FAIL;
+                    }
+                }
+                // copy_len = MIN(evt->data_len, (content_len - output_len));
+                if (copy_len) {
+                    memcpy(output_buffer + output_len, evt->data, copy_len);
+                }
+            }
+            output_len += copy_len;
         }
 
         break;
@@ -75,7 +75,7 @@ esp_err_t Http::webApiEventHandler(esp_http_client_event_t *evt)
         if (output_buffer != NULL)
         {
             // Response is accumulated in output_buffer. Uncomment the below line to print the accumulated response
-            // ESP_LOG_BUFFER_HEX(tag.c_str(), output_buffer, output_len);
+            ESP_LOG_BUFFER_HEX(tag.c_str(), output_buffer, output_len);
             free(output_buffer);
             output_buffer = NULL;
         }
@@ -104,15 +104,17 @@ esp_err_t Http::webApiEventHandler(esp_http_client_event_t *evt)
 
 bool Http::httpGet(string url)
 {
-    char local_response_buffer[MAX_HTTP_OUTPUT_BUFFER + 1] = {0};
+    ESP_LOGW(tag.c_str(), "GET URL -> %s", url.c_str());
+    char local_response_buffer[MAX_HTTP_OUTPUT_BUFFER] = {0};
     esp_http_client_config_t config = {
         .url = url.c_str(),
-        .query = nullptr,
+        .host = "rickandmortyapi.com",
+        .path = "/api/character/74",
         .disable_auto_redirect = true,
         .event_handler = webApiEventHandler,
         .user_data = local_response_buffer,
     };
-    ESP_LOGW(tag.c_str(), "GET %s", url.c_str());
+    
     xTaskCreate(&get, "GET", 4096, &config, 5, NULL);
     return false;
 }
@@ -120,19 +122,22 @@ bool Http::httpGet(string url)
 void Http::get(void *pvParameters)
 {
     esp_http_client_handle_t client = esp_http_client_init((esp_http_client_config_t *)pvParameters);
-        ESP_LOGE(tag.c_str(), "1");
     esp_http_client_set_method(client, HTTP_METHOD_GET);
-        ESP_LOGE(tag.c_str(), "2");
-
     if (esp_http_client_perform(client) == ESP_OK)
     {
-        // esp_http_client_get_user_data(client, &data);
         ESP_LOGI(tag.c_str(), "HTTP GET STATUS %d, content length %lld" PRId64, esp_http_client_get_status_code(client), esp_http_client_get_content_length(client));
+        ESP_LOGI(tag.c_str(), "HTTP GET OK");
+        if (ESP_OK == esp_http_client_get_user_data(client, &((esp_http_client_config_t *)pvParameters)->user_data))
+        {
+            ESP_LOGI(tag.c_str(), "HTTP DATA OK");
+        }
     }
     else
     {
         ESP_LOGE(tag.c_str(), "HTTP GET REQUEST FAILED");
     }
+
+    esp_http_client_cleanup(client);
     vTaskDelete(NULL);
 }
 

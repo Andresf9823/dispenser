@@ -6,6 +6,7 @@
 
 /*Networks*/
 #define NVS_WIFI_MODE "WIFI_MODE"
+#define NVS_WIFI_CHANNEL "WIFI_CHANNEL"
 
 /*Wifi Ap*/
 #define NVS_AP_SSID "AP_SSID"
