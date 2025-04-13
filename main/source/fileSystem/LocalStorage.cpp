@@ -138,7 +138,7 @@ WifiConfig LocalStorage::readWifiConfig()
     config.ApConfig = this->readApConfig();
     config.StaConfig = this->readStaConfig();
 
-    ESP_LOGI(tag.c_str(), "%s", "Finish Wifi Configuration reading");
+    ESP_LOGI(tag.c_str(), "%s", "Wifi configuration readed");
     return config;
 }
 

@@ -5,7 +5,7 @@ using namespace std;
 
 static string tag = "MAIN";
 
-uint32_t deviceId;
+uint32_t DEVICE_ID;
 TcpServerConfiguration appServer;
 
 Uarts *Uart;
@@ -31,7 +31,7 @@ void logFloat(string TAG, double logFloating)
 string SendDeviceInfo()
 {
 	DeviceInformation deviceInfo;
-	deviceInfo.deviceId = deviceId;
+	deviceInfo.deviceId = DEVICE_ID;
 	deviceInfo.versionApp = VERSION_APP;
 	deviceInfo.wifiConfig = Wifi->getConfig();
 	return Formatter::deviceInformation(deviceInfo);
@@ -41,7 +41,7 @@ string SetDefaultMemoryValues()
 {
 	CommandResult result;
 	result.command = ProtocolCommand::setDefaultMemoryValues;
-	result.deviceId = deviceId;
+	result.deviceId = DEVICE_ID;
 	result.status = true;
 	result.message = "Default values loaded, please restart system";
 	Storage->setDefaultValues();
@@ -52,7 +52,7 @@ string SaveWifiApRecord(uint8_t index, string password)
 {
 	CommandResult result;
 	result.command = ProtocolCommand::saveWifiApRecord;
-	result.deviceId = deviceId;
+	result.deviceId = DEVICE_ID;
 	ApRecordList record = Wifi->getRecordScannned(index);
 	if (string(record.ssid).empty())
 	{
@@ -79,7 +79,7 @@ string SaveWifiApRecord(uint8_t index, string password)
 string SetWifiMode(WifiMode mode)
 {
 	CommandResult result;
-	result.deviceId = deviceId;
+	result.deviceId = DEVICE_ID;
 	result.command = ProtocolCommand::setWifiMode;
 	result.status = false;
 	if (mode == WifiMode::Ap || mode == WifiMode::Station || mode == WifiMode::ApStation)
@@ -104,7 +104,7 @@ string SendWifiApRecordsScanned()
 string SetMac(uint8_t *mac, WifiMode mode)
 {
 	CommandResult result;
-	result.deviceId = deviceId;
+	result.deviceId = DEVICE_ID;
 	result.status = true;
 	string key;
 	switch (mode)
@@ -138,7 +138,7 @@ string GetDeviceConfiguration()
 	logString(tag, "GetDeviceConfiguration");
 	CommandResult result;
 	result.command = ProtocolCommand::getDeviceConfiguration;
-	result.deviceId = deviceId;
+	result.deviceId = DEVICE_ID;
 	if (Wifi->httpGet("https://rickandmortyapi.com/api/character/74"))
 	{
 		result.message = "Device configuration downloaded";
@@ -156,7 +156,7 @@ string RestartSystem()
 {
 	CommandResult result;
 	result.command = ProtocolCommand::restartSystem;
-	result.deviceId = deviceId;
+	result.deviceId = DEVICE_ID;
 	result.status = true;
 	result.message = "RESTARTING SYSTEM IN 3 SECONDS";
 	logString(tag, result.message);
@@ -174,7 +174,7 @@ string LoginApp(string userEmail, string password)
 {
 	CommandResult result;
 	result.command = ProtocolCommand::login;
-	result.deviceId = deviceId;
+	result.deviceId = DEVICE_ID;
 	if (userEmail == "andresf9806@gmail.com" && password == "Chan.61522_")
 	{
 		result.status = true;
@@ -242,7 +242,9 @@ string DeviceConfigApiStack(char *buffer)
 void initObjects()
 {
 	Storage = new LocalStorage();
-	deviceId = Storage->readDwordRecord(NVS_DEVICE_ID);
+	// Storage->setDefaultValues();
+	DEVICE_ID = Storage->readDwordRecord(NVS_DEVICE_ID);
+
 	Uart = new Uarts();
 	Uart->logString = logString;
 	Uart->logDword = logDword;
