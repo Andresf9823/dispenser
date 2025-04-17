@@ -2,9 +2,7 @@
 #define _FORMATTER_HPP_
 
 #include <GlobalDefines.hpp>
-#include <gpio/Gpio.hpp>
-#include <wire/Uarts.hpp>
-#include <network/wifi/Wifi.hpp>
+#include "../network/wifi/Wifi.hpp"
 #include "ArduinoJson-v6.21.3.h"
 
 typedef struct _DeviceInformation

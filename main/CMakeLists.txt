@@ -2,15 +2,14 @@
 # for more information about component CMakeLists.txt files.
 
 idf_component_register(
-    SRCS 
-    source/wired/Uarts.cpp
-    source/fileSystem/LocalStorage.cpp
-    source/network/protocols/Tcp.cpp
-    source/network/protocols/Http.cpp
-    source/network/wifi/Wifi.cpp
-    source/network/ethernet/Ethernet.cpp
-    source/format/Formatter.cpp
-    source/gpio/Gpio.cpp
+    SRCS
+    source/infrastructure/fileSystem/localStorage/LocalStorage.cpp
+    source/infrastructure/network/protocols/Tcp.cpp
+    source/infrastructure/network/protocols/Http.cpp
+    source/infrastructure/network/wifi/Wifi.cpp
+    source/infrastructure/network/ethernet/Ethernet.cpp
+    source/infrastructure/format/Formatter.cpp
+    source/app.cpp
     main.cpp       		 # list the source files of this component
     INCLUDE_DIRS .       # optional, add here public include directories
     includes
@@ -18,3 +17,6 @@ idf_component_register(
     REQUIRES             # optional, list the public requirements (component names)
     PRIV_REQUIRES        # optional, list the private requirements
 )
+
+target_compile_options(${COMPONENT_LIB} PRIVATE -fexceptions)
+target_compile_options(${COMPONENT_LIB} PRIVATE -frtti)

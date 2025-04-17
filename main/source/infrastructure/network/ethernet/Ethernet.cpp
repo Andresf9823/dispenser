@@ -1,4 +1,4 @@
-#include "network/ethernet/Ethernet.hpp"
+#include "Ethernet.hpp"
 
 Ethernet::Ethernet(/* args */)
 {

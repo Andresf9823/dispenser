@@ -1,4 +1,4 @@
-#include "network/protocols/Tcp.hpp"
+#include "Tcp.hpp"
 
 Tcp::Tcp(/* args */)
 {

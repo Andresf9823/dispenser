@@ -63,9 +63,9 @@ private:
 
 public:
 	WifiService();
-	bool init(WifiConfig config);
-	void setApConfig(WifiConfig config);
-	void setStationConfig(WifiConfig config);
+	bool init(WifiConfig &config);
+	void setApConfig(WifiConfig &config);
+	void setStationConfig(WifiConfig &config);
 	void setStaMacTarget(uint8_t *StaMacTarget);
 	uint16_t scanWifiNetworks(ApRecordList *apRecords);
 	ApRecordList getRecordScannned(uint8_t index);

@@ -84,7 +84,8 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "variant": "cpp",
-        "codecvt": "cpp"
+        "codecvt": "cpp",
+        "ios": "cpp"
     },
     "idf.port": "/dev/ttyUSB0"
 }

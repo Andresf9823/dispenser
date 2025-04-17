@@ -1,4 +1,4 @@
-#include <network/wifi/Wifi.hpp>
+#include "Wifi.hpp"
 
 WifiService::WifiService()
 {
@@ -145,7 +145,7 @@ void WifiService::wifiEventHandler(void *arg, esp_event_base_t event_base, int32
     }
 }
 
-bool WifiService::init(WifiConfig config)
+bool WifiService::init(WifiConfig &config)
 {
     esp_netif_init();
     nvs_flash_init();
@@ -263,7 +263,7 @@ void WifiService::setIpAddress(WifiMode mode, NetworkProperties ipConfig)
     this->logString(tag, "Finish Ip Configuration");
 }
 
-void WifiService::setStationConfig(WifiConfig config)
+void WifiService::setStationConfig(WifiConfig &config)
 {
     this->logString(tag, "Setting Station configuration");
     this->setIpAddress(WifiMode::Station, config.StaConfig);
@@ -353,7 +353,7 @@ NetworkProperties WifiService::getStaConfig()
     return station;
 }
 
-void WifiService::setApConfig(WifiConfig config)
+void WifiService::setApConfig(WifiConfig &config)
 {
     this->logString(tag, "Setting Access Point configuration");
     this->setIpAddress(WifiMode::Ap, config.ApConfig);

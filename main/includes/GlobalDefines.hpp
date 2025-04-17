@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <string>
+#include <memory>
+#pragma once
 
 /*Version*/
 #define VERSION_APP "0.0.1"

@@ -1,4 +1,4 @@
-#include "fileSystem/LocalStorage.hpp"
+#include "LocalStorage.hpp"
 
 LocalStorage::LocalStorage(/* args */)
 {
@@ -55,7 +55,7 @@ void LocalStorage::setDefaultValues()
     ESP_LOGI(tag.c_str(), "%s", "FINSIHED");
 }
 
-NetworkProperties LocalStorage::readApConfig()
+NetworkProperties LocalStorage::loadApConfig()
 {
 
     NetworkProperties ApConfig;
@@ -87,7 +87,7 @@ NetworkProperties LocalStorage::readApConfig()
     return ApConfig;
 }
 
-NetworkProperties LocalStorage::readStaConfig()
+NetworkProperties LocalStorage::loadStaConfig()
 {
     NetworkProperties StaConfig;
     uint8_t ip[4];
@@ -118,7 +118,7 @@ NetworkProperties LocalStorage::readStaConfig()
     return StaConfig;
 }
 
-WifiConfig LocalStorage::readWifiConfig()
+WifiConfig LocalStorage::loadWifiConfig()
 {
     WifiConfig config;
 
@@ -135,8 +135,8 @@ WifiConfig LocalStorage::readWifiConfig()
     ESP_LOGI(tag.c_str(), "%s", "Reading Wifi Configuration");
     config.mode = static_cast<WifiMode>(this->readByteRecord(NVS_WIFI_MODE));
     config.primaryChannel = this->readByteRecord(NVS_WIFI_CHANNEL);
-    config.ApConfig = this->readApConfig();
-    config.StaConfig = this->readStaConfig();
+    config.ApConfig = this->loadApConfig();
+    config.StaConfig = this->loadStaConfig();
 
     ESP_LOGI(tag.c_str(), "%s", "Wifi configuration readed");
     return config;
@@ -150,6 +150,13 @@ ApiConfig LocalStorage::getApiConfig()
     return config;
 }
 
+ApiConfig LocalStorage::readApiConfig()
+{
+    ApiConfig config;
+    config.host = this->readStringRecord(NVS_STA_API_HOST);
+    return config;
+}
+
 void LocalStorage::saveStationTarget(ApRecordList record, string password)
 {
     this->writeStringRecord(NVS_STA_TARGET_MAC, Formatter::macToString(record.mac, sizeof(record.mac)));
@@ -157,6 +164,17 @@ void LocalStorage::saveStationTarget(ApRecordList record, string password)
     this->writeByteRecord(NVS_STA_AUTH_MODE, record.authMode);
     this->writeStringRecord(NVS_STA_PASSWORD, password);
     this->writeByteRecord(NVS_WIFI_CHANNEL, record.primaryChannel);
+}
+
+ApRecordList LocalStorage::loadStationTarget()
+{
+    ApRecordList record;
+    Formatter::stringToMac(record.mac, this->readStringRecord(NVS_STA_TARGET_MAC).c_str());
+    strcpy(record.ssid,this->readStringRecord(NVS_STA_SSID).c_str());
+    record.authMode = this->readByteRecord(NVS_STA_AUTH_MODE);
+    record.primaryChannel = this->readByteRecord(NVS_WIFI_CHANNEL);
+    record.rssi = 0;
+    return record;
 }
 
 string LocalStorage::readStringRecord(string _key)
