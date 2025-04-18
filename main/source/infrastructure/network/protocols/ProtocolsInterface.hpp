@@ -6,11 +6,8 @@
 class ProtocolsInterface
 {
 public:
-    ProtocolsInterface() {}
-    void (*logString)(string TAG, string message);
-    void (*logDword)(string TAG, int64_t logNumber);
-    void (*logFloat)(string TAG, double logFloating);
-    ~ProtocolsInterface() {}
+    ProtocolsInterface() = default;
+    ~ProtocolsInterface() = default;
 };
 
 #endif
