@@ -6,8 +6,8 @@ App::App() {
         ESP_LOGW(this->tag.c_str(), "%s", ">>>>>>>>>>>>> APP STARTED <<<<<<<<<<<<<<");
         
         LocalStorage *localStorage = new LocalStorage();
-        WifiService *wifiService = new WifiService();
         WifiConfig wifiConfig = localStorage->loadWifiConfig();
+        WifiService *wifiService = new WifiService();
         wifiService->init(wifiConfig);
         
     } catch (const std::exception &e) {

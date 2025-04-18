@@ -1,7 +1,7 @@
 #ifndef APP_HPP
 #define APP_HPP
 
-#include "infrastructure/fileSystem/localStorage/LocalStorage.hpp"
+#include "infrastructure/storage/localStorage/LocalStorage.hpp"
 
 class App {
 

@@ -3,7 +3,7 @@
 
 idf_component_register(
     SRCS
-    source/infrastructure/fileSystem/localStorage/LocalStorage.cpp
+    source/infrastructure/storage/localStorage/LocalStorage.cpp
     source/infrastructure/network/protocols/Tcp.cpp
     source/infrastructure/network/protocols/Http.cpp
     source/infrastructure/network/wifi/Wifi.cpp
