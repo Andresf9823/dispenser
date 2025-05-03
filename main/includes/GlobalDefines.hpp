@@ -9,6 +9,7 @@
 #include <string.h>
 #include <string>
 #include <memory>
+using namespace std;
 #pragma once
 
 /*Version*/
@@ -18,6 +19,5 @@
 #define KB (1024UL)
 #define MB (KB) * (KB)
 
-using namespace std;
 
 #endif

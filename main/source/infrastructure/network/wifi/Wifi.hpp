@@ -44,10 +44,15 @@ typedef struct _WifiConfig
 	NetworkProperties StaConfig;
 } WifiConfig;
 
-class WifiService : public Tcp, public Http
+class WifiService : public Network
 {
 private:
+
 	static constexpr string tag = "WIFI SERVICE";
+
+    esp_netif_t *esp_netif_ap;
+    esp_netif_t *esp_netif_sta;
+    esp_netif_t *esp_netif_eth;
 	ApRecordList apRecordsScanned[MAXIMUM_SIZE_OF_SCAN_LIST];
 	uint8_t ApAuthenticationMode;
 	string ApPassword;
@@ -67,9 +72,11 @@ public:
 	void setApConfig(WifiConfig &config);
 	void setStationConfig(WifiConfig &config);
 	void setStaMacTarget(uint8_t *StaMacTarget);
+	void createIpServer(IpServerRepository &IpServer, IpServerConfiguration &serverConfig);
+	void createIpClient();
 	uint16_t scanWifiNetworks(ApRecordList *apRecords);
 	ApRecordList getRecordScannned(uint8_t index);
 	WifiConfig getConfig();
-	~WifiService();
+	~WifiService() = default;
 };
 #endif

@@ -6,6 +6,11 @@ WifiService::WifiService()
     memset(apRecordsScanned, 0, sizeof(apRecordsScanned));
 }
 
+void WifiService::createIpServer(IpServerRepository &ipServer, IpServerConfiguration &serverConfig)
+{
+    ipServer.createServer(serverConfig);
+}
+
 void WifiService::wifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
 {
     if (event_base == WIFI_EVENT)
@@ -180,7 +185,8 @@ bool WifiService::init(WifiConfig &config)
         break;
     }
 
-    if (esp_wifi_start() == ESP_OK){
+    if (esp_wifi_start() == ESP_OK)
+    {
         ESP_LOGI(tag.c_str(), "%s", "WIFI STARTED");
         return true;
     }
@@ -291,13 +297,24 @@ void WifiService::setStationConfig(WifiConfig &config)
                                         _pass[40], _pass[41], _pass[42], _pass[43], _pass[44], _pass[45], _pass[46], _pass[47],
                                         _pass[48], _pass[49], _pass[50], _pass[51], _pass[52], _pass[53], _pass[54], _pass[55],
                                         _pass[56], _pass[56], _pass[58], _pass[50], _pass[60], _pass[61], _pass[62], _pass[63]},
-                           .scan_method = WIFI_FAST_SCAN,
-                           .bssid_set = 1,
+                           .scan_method = WIFI_ALL_CHANNEL_SCAN,
+                           .bssid_set = 0,
                            .bssid = {config.StaConfig.targetMac[0], config.StaConfig.targetMac[1], config.StaConfig.targetMac[2],
-                                     config.StaConfig.targetMac[3], config.StaConfig.targetMac[4], config.StaConfig.targetMac[5]},
+                                     config.StaConfig.targetMac[3], config.StaConfig.targetMac[4], config.StaConfig.targetMac[5]}, /**< MAC address of target AP*/
                            .channel = config.primaryChannel,
+                           //    .listen_interval = 3,
                            .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
-                           .threshold = (wifi_scan_threshold_t){.rssi = -127, .authmode = (wifi_auth_mode_t)config.StaConfig.authentication},
+                           .threshold = (wifi_scan_threshold_t){.rssi = 99, .authmode = (wifi_auth_mode_t)config.StaConfig.authentication},
+                           //    .pmf_cfg = (wifi_pmf_config_t){.capable = true, .required = false},
+                           //    .rm_enabled = (uint32_t)1,
+                           //    .btm_enabled = (uint32_t)1,
+                           //    .mbo_enabled = (uint32_t)1,client/
+                           //    //		.bo_enabled = (uint32_t)1,
+                           //    .ft_enabled = (uint32_t)1,
+                           //    .owe_enabled = (uint32_t)1,
+                           //    .transition_disable = (uint32_t)1,
+                           //    .reserved = (uint32_t)26,
+                           //    .sae_pwe_h2e = WPA3_SAE_PWE_UNSPECIFIED,
                            .failure_retry_cnt = 3,
                        }};
     this->macSafeValidator(WIFI_IF_STA, config.StaConfig.mac);

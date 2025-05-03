@@ -110,6 +110,7 @@ bool Http::httpGet(string url)
         .url = url.c_str(),
         .host = "rickandmortyapi.com",
         .path = "/api/character/74",
+        .timeout_ms = 5000,
         .disable_auto_redirect = true,
         .event_handler = webApiEventHandler,
         .user_data = local_response_buffer,

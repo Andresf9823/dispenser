@@ -85,7 +85,9 @@
         "typeinfo": "cpp",
         "variant": "cpp",
         "codecvt": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "xlocmes": "cpp",
+        "xutility": "cpp"
     },
     "idf.port": "/dev/ttyUSB0"
 }

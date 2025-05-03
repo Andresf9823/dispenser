@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include "../network/wifi/Wifi.hpp"
-#include "../network/protocols/Http.hpp"
+#include "../network/protocols/protocols/Http.hpp"
 
 class StorageRepository {
 public:

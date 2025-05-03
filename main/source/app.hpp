@@ -2,6 +2,7 @@
 #define APP_HPP
 
 #include "infrastructure/storage/localStorage/LocalStorage.hpp"
+#include "infrastructure/network/protocols/protocols/TcpServer.hpp"
 
 class App {
 

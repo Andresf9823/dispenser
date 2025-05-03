@@ -1,9 +1,5 @@
 #include "Formatter.hpp"
 
-Formatter::Formatter(/* args */)
-{
-}
-
 string Formatter::deviceInformation(DeviceInformation deviceInfo)
 {
     string jsonString;
@@ -29,8 +25,6 @@ string Formatter::deviceInformation(DeviceInformation deviceInfo)
             accessPoint["Mode"] = deviceInfo.wifiConfig.mode;
             accessPoint["Pass"] = deviceInfo.wifiConfig.ApConfig.password;
 
-            JsonObject api = accessPoint.createNestedObject("Api");
-            api["Host"] = deviceInfo.WifiApiClient.host;
         }
 
         if (deviceInfo.wifiConfig.mode == WifiMode::Station || deviceInfo.wifiConfig.mode == WifiMode::ApStation)
@@ -45,9 +39,6 @@ string Formatter::deviceInformation(DeviceInformation deviceInfo)
             station["Auth"] = deviceInfo.wifiConfig.StaConfig.authentication;
             station["Mode"] = deviceInfo.wifiConfig.mode;
             station["Pass"] = deviceInfo.wifiConfig.StaConfig.password;
-
-            JsonObject api = station.createNestedObject("Api");
-            api["Host"] = deviceInfo.WifiApiClient.host;
         }
     }
 
@@ -174,8 +165,4 @@ DynamicJsonDocument Formatter::charArrayToJson(char *bufferIn)
     DynamicJsonDocument doc(sizeof(bufferIn));
     deserializeJson(doc, bufferIn);
     return doc;
-}
-
-Formatter::~Formatter()
-{
 }

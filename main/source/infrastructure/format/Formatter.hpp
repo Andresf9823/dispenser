@@ -10,8 +10,6 @@ typedef struct _DeviceInformation
     uint32_t deviceId;
     string versionApp;
     WifiConfig wifiConfig;
-    ApiConfig WifiApiClient;
-
 } DeviceInformation;
 
 typedef struct _CommandResult
@@ -30,7 +28,7 @@ private:
     static constexpr string tag = "FORMATTER";
 
 public:
-    Formatter();
+    Formatter() = default;
     static void jsonToCharArray(DynamicJsonDocument doc, char *bufferIn);
     static void stringToIpAddress(uint8_t *ip, string rawIp);
     static void stringToMac(uint8_t *_mac, string rawMac);
@@ -40,7 +38,7 @@ public:
     static string deviceInformation(DeviceInformation deviceInfo);
     static string apRecordsList(ApRecordList *apNetworks, uint16_t apQuantity);
     static DynamicJsonDocument charArrayToJson(char *bufferIn);
-    ~Formatter();
+    ~Formatter() = default;
 };
 
 #endif

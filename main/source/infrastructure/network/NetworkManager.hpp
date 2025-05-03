@@ -12,8 +12,4 @@ public:
     ~NetworkManager();
 };
 
-
-
-
-
 #endif

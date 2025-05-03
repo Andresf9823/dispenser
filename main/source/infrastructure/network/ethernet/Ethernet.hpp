@@ -6,7 +6,7 @@
 #include "../NetworkInterface.hpp"
 
 
-class Ethernet : public Tcp
+class Ethernet : public TcpServer
 {
 private:
 
