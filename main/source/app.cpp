@@ -29,9 +29,19 @@ App::App()
 
             IpServerConfiguration tcpServerConfig;
             tcpServerConfig.port = 8080;
+            tcpServerConfig.type = IpServerType::TCP;
             tcpServerConfig.callback = helloWorldCallback;
-            unique_ptr<TcpServer> tcpServer = make_unique<TcpServer>();
-            wifiService->createIpServer(*tcpServer, tcpServerConfig);
+            wifiService->createIpServer(tcpServerConfig);
+
+            IpClientConfiguration tcpClientConfig;
+            tcpClientConfig.port = 1100;
+            tcpClientConfig.type = IpServerType::TCP;
+            tcpClientConfig.ipTarget[0] = 192;
+            tcpClientConfig.ipTarget[1] = 168;
+            tcpClientConfig.ipTarget[2] = 1;
+            tcpClientConfig.ipTarget[3] = 134;
+            tcpClientConfig.callback = byeWorldCallback;
+            wifiService->createIpClient(tcpClientConfig);
         }
     }
     catch (const std::exception &e)

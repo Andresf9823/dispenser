@@ -5,6 +5,7 @@ idf_component_register(
     SRCS
     source/infrastructure/storage/localStorage/LocalStorage.cpp
     source/infrastructure/network/protocols/protocols/TcpServer.cpp
+    source/infrastructure/network/protocols/protocols/TcpClient.cpp
     source/infrastructure/network/protocols/protocols/Http.cpp
     source/infrastructure/network/wifi/Wifi.cpp
     source/infrastructure/network/ethernet/Ethernet.cpp

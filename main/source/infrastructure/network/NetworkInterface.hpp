@@ -3,6 +3,7 @@
 
 #include "../format/ArduinoJson-v6.21.3.h"
 #include "protocols/protocols/TcpServer.hpp"
+#include "protocols/protocols/TcpClient.hpp"
 
 typedef struct _NetworkProperties
 {

@@ -72,8 +72,8 @@ public:
 	void setApConfig(WifiConfig &config);
 	void setStationConfig(WifiConfig &config);
 	void setStaMacTarget(uint8_t *StaMacTarget);
-	void createIpServer(IpServerRepository &IpServer, IpServerConfiguration &serverConfig);
-	void createIpClient();
+	void createIpServer(IpServerConfiguration &serverConfig);
+	void createIpClient(IpClientConfiguration &clientConfig);
 	uint16_t scanWifiNetworks(ApRecordList *apRecords);
 	ApRecordList getRecordScannned(uint8_t index);
 	WifiConfig getConfig();

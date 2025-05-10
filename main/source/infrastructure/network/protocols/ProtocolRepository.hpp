@@ -16,16 +16,37 @@ typedef enum protocolCommand
     setMac = 0x2C
 } ProtocolCommand;
 
+enum class IpServerType
+{
+    TCP = 1,
+    UDP = 2,
+};
+
 typedef struct _IpServerConfiguration
 {
     uint16_t port;
+    IpServerType type;
     string (*callback)(char *dataToSend);
 } IpServerConfiguration;
+
+typedef struct _IpSclientConfiguration
+{
+    uint16_t port;
+    IpServerType type;
+    uint8_t ipTarget[4];
+    string (*callback)(char *dataToSend);
+} IpClientConfiguration;
 
 class IpServerRepository
 {
 public:
     virtual void createServer(IpServerConfiguration &config) = 0;
+};
+
+class IpClientRepository
+{
+public:
+    virtual void connectToServer(IpClientConfiguration &config) = 0;
 };
 
 #endif

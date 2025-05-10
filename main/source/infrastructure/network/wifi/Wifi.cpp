@@ -6,9 +6,35 @@ WifiService::WifiService()
     memset(apRecordsScanned, 0, sizeof(apRecordsScanned));
 }
 
-void WifiService::createIpServer(IpServerRepository &ipServer, IpServerConfiguration &serverConfig)
+void WifiService::createIpServer(IpServerConfiguration &serverConfig)
 {
-    ipServer.createServer(serverConfig);
+
+     std::unique_ptr<IpServerRepository> ipServerRepo;
+    switch (serverConfig.type)
+    {
+    case IpServerType::TCP:
+        ipServerRepo = make_unique<TcpServer>();
+        break;
+
+    default:
+        break;
+    }
+    ipServerRepo->createServer(serverConfig);
+}
+
+void WifiService::createIpClient(IpClientConfiguration &clientConfig)
+{
+    std::unique_ptr<IpClientRepository> ipClientRepo;
+    switch (clientConfig.type)
+    {
+    case IpServerType::TCP:
+        ipClientRepo = make_unique<TcpClient>();
+        break;
+
+    default:
+        break;
+    }
+    ipClientRepo->connectToServer(clientConfig);
 }
 
 void WifiService::wifiEventHandler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data)
