@@ -44,6 +44,8 @@ App::App()
             wifiService->createIpClient(tcpClientConfig);
         }
     }
+
+    
     catch (const std::exception &e)
     {
         ESP_LOGE(this->tag.c_str(), "%s", e.what());
