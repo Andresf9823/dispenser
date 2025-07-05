@@ -3,6 +3,11 @@
 
 #include "GlobalDefines.hpp"
 
+#include "lwip/err.h"
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include <lwip/netdb.h>
+
 typedef enum protocolCommand
 {
     restartSystem = 0x00,
@@ -26,7 +31,7 @@ typedef struct _IpServerConfiguration
 {
     uint16_t port;
     IpServerType type;
-    string (*callback)(char *dataToSend);
+    function<string(char *dataToSend)> callback;
 } IpServerConfiguration;
 
 typedef struct _IpSclientConfiguration

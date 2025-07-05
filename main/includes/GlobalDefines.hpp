@@ -9,6 +9,7 @@
 #include <string.h>
 #include <string>
 #include <memory>
+#include <functional>
 using namespace std;
 #pragma once
 

@@ -18,6 +18,7 @@ App::App()
         ESP_LOGW(this->tag.c_str(), "%s", ">>>>>>>>>>>>> APP STARTED <<<<<<<<<<<<<<");
 
         unique_ptr<LocalStorage> localStorage = make_unique<LocalStorage>();
+        localStorage->setDefaultValues();
 
         // Configurar y crear servidor TCP
 
@@ -33,19 +34,18 @@ App::App()
             tcpServerConfig.callback = helloWorldCallback;
             wifiService->createIpServer(tcpServerConfig);
 
-            IpClientConfiguration tcpClientConfig;
-            tcpClientConfig.port = 1100;
-            tcpClientConfig.type = IpServerType::TCP;
-            tcpClientConfig.ipTarget[0] = 192;
-            tcpClientConfig.ipTarget[1] = 168;
-            tcpClientConfig.ipTarget[2] = 1;
-            tcpClientConfig.ipTarget[3] = 134;
-            tcpClientConfig.callback = byeWorldCallback;
-            wifiService->createIpClient(tcpClientConfig);
+            // unique_ptr<IpClientConfiguration> tcpClientConfig = make_unique<IpClientConfiguration>();
+            // tcpClientConfig->port = 1100;
+            // tcpClientConfig->type = IpServerType::TCP;
+            // tcpClientConfig->ipTarget[0] = 192;
+            // tcpClientConfig->ipTarget[1] = 168;
+            // tcpClientConfig->ipTarget[2] = 0;
+            // tcpClientConfig->ipTarget[3] = 2;
+            // tcpClientConfig->callback = byeWorldCallback;
+            // wifiService->createIpClient(*tcpClientConfig);
         }
     }
 
-    
     catch (const std::exception &e)
     {
         ESP_LOGE(this->tag.c_str(), "%s", e.what());

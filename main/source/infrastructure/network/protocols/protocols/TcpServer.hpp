@@ -7,18 +7,13 @@
 #include <freertos/task.h>
 #include <freertos/timers.h>
 
-#include "lwip/err.h"
-#include "lwip/sockets.h"
-#include "lwip/sys.h"
-#include <lwip/netdb.h>
-
 #include "../ProtocolRepository.hpp"
 
 using namespace std;
 
 #define TCP_RX_BUFFER_SIZE (KB) / 2
 #define TCP_TX_BUFFER_SIZE (KB) * (1.5)
-#define TCP_TASK_SIZE (KB) * (6)
+#define TCP_TASK_SIZE (KB) * (4)
 #define TCP_MAX_SERVERS 5
 
 class TcpServer : public IpServerRepository
@@ -28,8 +23,10 @@ private:
     static bool isValidFrame(char *frame, uint len);
     void sendMessage(string &message);
     void serverLaunch(void *pvParameters);
-    void serverTask(string (*tcpBuffer)(char *));
+    void serverTask(function<string(char *dataToSend)> callbackFunction);
+    void cleanUpServer(int &listenSocket);
     int socketState = -1;
+    IpServerConfiguration serverConfig;
 
 public:
     TcpServer() = default;

@@ -2,23 +2,36 @@
 
 void TcpServer::sendMessage(string &message)
 {
-    if (this->socketState != 0)
+    if (this->socketState > 0)
     {
         // send() can return less bytes than supplied length.
         // Walk-around for robust implementation.
         int to_write = strlen(message.c_str());
-        int len = strlen(message.c_str());
+        int len = to_write;
+        if (len > TCP_TX_BUFFER_SIZE)
+        {
+            ESP_LOGE(tag.c_str(), "Message too long to send: %d bytes", len);
+            return;
+        }
+        if (len <= 0)
+        {
+            ESP_LOGE(tag.c_str(), "Nothing to send");
+            return;
+        }
+
+        const char *message_ = message.c_str();
         while (to_write > 0)
         {
-            int written = send(this->socketState, message.c_str() + (len - to_write), to_write, 0);
+            int written = send(this->socketState, message_ + (len - to_write), to_write, 0);
             if (written < 0)
             {
-                ESP_LOGE("TCP retransmit", "Error occurred during sending: errno %d", errno);
+                ESP_LOGE("TCP MESSAGE", "Error occurred during sending: errno %d", errno);
                 // Failed to retransmit, giving up
                 return;
             }
             to_write -= written;
         }
+        delete message_;
     }
     else
     {
@@ -26,17 +39,18 @@ void TcpServer::sendMessage(string &message)
     }
 }
 
-void TcpServer::serverTask(string (*callbackFunction)(char *))
+void TcpServer::serverTask(function<string(char *dataToSend)> callbackFunction)
 {
     int len;
-    char rxTcpbuffer[TCP_RX_BUFFER_SIZE];
+    char rxTcpBuffer[TCP_RX_BUFFER_SIZE];
 
     do
     {
-        len = recv(this->socketState, rxTcpbuffer, sizeof(rxTcpbuffer) - 1, 0);
+        len = read(this->socketState, rxTcpBuffer, sizeof(rxTcpBuffer) - 1);
+
         if (len < 0)
         {
-            ESP_LOGE("TCP retransmit", "Error occurred during receiving: errno %d", errno);
+            ESP_LOGE("TCP retransmit", "Error occurred during receiving T_T : errno %d", errno);
         }
         else if (len == 0)
         {
@@ -44,26 +58,24 @@ void TcpServer::serverTask(string (*callbackFunction)(char *))
         }
         else
         {
-            rxTcpbuffer[len] = 0; // Null-terminate whatever is received and treat it like a string
-            char data[sizeof(rxTcpbuffer) * sizeof(char)];
+            rxTcpBuffer[len] = 0; // Null-terminate whatever is received and treat it like a string
+            char data[sizeof(rxTcpBuffer) * sizeof(char)];
             memset(data, 0, sizeof(data));
 
             uint k = 0;
             for (uint i = 0; i < len; i++)
             {
-                k += sprintf(data + k, "%02X ", rxTcpbuffer[i]);
+                k += sprintf(data + k, "%02X ", rxTcpBuffer[i]);
             }
+            ESP_LOGI("TCP RX_TCP_BUFFER", "%s", rxTcpBuffer);
             ESP_LOGI("TCP retransmit", "Received %d bytes: %s", len, (const char *)data);
 
-            if (isValidFrame(rxTcpbuffer, len))
+            if (isValidFrame(rxTcpBuffer, len))
             {
-                string data_ = callbackFunction(rxTcpbuffer);
-                if (!data_.empty())
-                {
-                    this->sendMessage(data_);
-                }
+                string data = callbackFunction(rxTcpBuffer);
+                if (!data.empty())
+                    ESP_LOGW("DATA", "%s", data.c_str());
             }
-            memset(rxTcpbuffer, 0, TCP_RX_BUFFER_SIZE);
         }
     } while (len > 0);
 }
@@ -71,7 +83,7 @@ void TcpServer::serverTask(string (*callbackFunction)(char *))
 void TcpServer::serverLaunch(void *pvParameters)
 {
     int opt = 1;
-    IpServerConfiguration *instance = static_cast<IpServerConfiguration *>(pvParameters);
+    IpServerConfiguration *instance = new IpServerConfiguration(*static_cast<IpServerConfiguration *>(pvParameters));
     ESP_LOGW("TCP SERVICE", "%i", instance->port);
     bool listening = true;
     struct sockaddr_in destinationAddress;
@@ -83,11 +95,10 @@ void TcpServer::serverLaunch(void *pvParameters)
     if (listenSocket < 0)
     {
         ESP_LOGE("TCP SERVER TASK", "Unable to create socket in port: %d ", instance->port);
-        vTaskDelete(NULL);
-        return;
+        this->cleanUpServer(listenSocket);
     }
 
-    ESP_LOGI("TCP SERVER TASK", "Socket created");
+    ESP_LOGW("TCP SERVER TASK", "Socket created");
 
     int err = bind(listenSocket, (struct sockaddr *)&destinationAddress, sizeof(destinationAddress));
     if (err != 0)
@@ -95,6 +106,7 @@ void TcpServer::serverLaunch(void *pvParameters)
         ESP_LOGE("TCP SERVER TASK", "Socket unable to bind: errno %d", errno);
         ESP_LOGE("TCP SERVER TASK", "IPPROTO: %d", destinationAddress.sin_family);
         listening = false;
+        this->cleanUpServer(listenSocket);
     }
 
     err = listen(listenSocket, 1);
@@ -102,6 +114,7 @@ void TcpServer::serverLaunch(void *pvParameters)
     {
         ESP_LOGE("TCP SERVER TASK", "Error occurred during listen: errno %d", errno);
         listening = false;
+        this->cleanUpServer(listenSocket);
     }
 
     setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
@@ -110,7 +123,7 @@ void TcpServer::serverLaunch(void *pvParameters)
     while (listening)
     {
         ESP_LOGW("TCP SERVER", "Socket listening on port %d", instance->port);
-        struct sockaddr_storage * source_addr; // Large enough for both IPv4 or IPv6
+        struct sockaddr_storage source_addr; // Large enough for both IPv4 or IPv6
         socklen_t addr_len = sizeof(source_addr);
         this->socketState = accept(listenSocket, (struct sockaddr *)&source_addr, &addr_len);
         if (this->socketState < 0)
@@ -126,26 +139,49 @@ void TcpServer::serverLaunch(void *pvParameters)
         // setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &keepCount, sizeof(int));
 
         // Convert ip address to string
-        if (source_addr->ss_family == PF_INET)
+
+        if (source_addr.ss_family == PF_INET)
         {
             inet_ntoa_r(((struct sockaddr_in *)&source_addr)->sin_addr, addr_str, sizeof(addr_str) - 1);
         }
+        else if (source_addr.ss_family == PF_INET6)
+        {
+            inet6_ntoa_r(((struct sockaddr_in6 *)&source_addr)->sin6_addr, addr_str, sizeof(addr_str) - 1);
+        }
+        else
+        {
+            ESP_LOGE("TCP SERVER", "Unknown address family: %d", source_addr.ss_family);
+            break;
+        }
         ESP_LOGW("TCP SERVER", "Socket accepted ip address: %s", addr_str);
+
         serverTask(instance->callback);
         shutdown(this->socketState, 0);
         close(this->socketState);
     }
 
     ESP_LOGE("TCP SERVER TASK", "Closing port: %d", instance->port);
-    shutdown(listenSocket, 0);
+    delete instance; // Liberar la memoria asignada dinámicamente
+    this->cleanUpServer(listenSocket);
+}
+
+void TcpServer::cleanUpServer(int &listenSocket)
+{
     close(listenSocket);
     vTaskDelete(NULL);
+    ESP_LOGE("TCP SERVER TASK", "Socket closed");
 }
 
 bool TcpServer::isValidFrame(char *buffer, uint len)
 {
-    if ((buffer[0] == (uint8_t)'{') && (buffer[len - 1] == (uint8_t)'}'))
-        return true;
+    if (buffer[0] == '{')
+    {
+        for (size_t i = 0; i < len; i++)
+        {
+            if (buffer[i] == '}')
+                return true;
+        }
+    }
     ESP_LOGE("Incoming frame validation", "%s", "Invalid frame");
     return false;
 }
