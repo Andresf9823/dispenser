@@ -67,7 +67,7 @@ void TcpServer::serverTask(function<string(char *dataToSend)> callbackFunction)
             {
                 k += sprintf(data + k, "%02X ", rxTcpBuffer[i]);
             }
-            ESP_LOGI("TCP RX_TCP_BUFFER", "%s", rxTcpBuffer);
+            
             ESP_LOGI("TCP retransmit", "Received %d bytes: %s", len, (const char *)data);
 
             if (isValidFrame(rxTcpBuffer, len))
@@ -179,7 +179,11 @@ bool TcpServer::isValidFrame(char *buffer, uint len)
         for (size_t i = 0; i < len; i++)
         {
             if (buffer[i] == '}')
+            {
+                buffer[i + 1] = '\0'; // Null-terminate the string
+                ESP_LOGI("Incoming frame validation", "Valid frame: %s", buffer);
                 return true;
+            }
         }
     }
     ESP_LOGE("Incoming frame validation", "%s", "Invalid frame");
