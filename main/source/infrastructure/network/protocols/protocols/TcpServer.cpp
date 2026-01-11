@@ -2,40 +2,37 @@
 
 void TcpServer::sendMessage(string &message)
 {
-    if (this->socketState > 0)
-    {
-        // send() can return less bytes than supplied length.
-        // Walk-around for robust implementation.
-        int to_write = strlen(message.c_str());
-        int len = to_write;
-        if (len > TCP_TX_BUFFER_SIZE)
-        {
-            ESP_LOGE(tag.c_str(), "Message too long to send: %d bytes", len);
-            return;
-        }
-        if (len <= 0)
-        {
-            ESP_LOGE(tag.c_str(), "Nothing to send");
-            return;
-        }
-
-        const char *message_ = message.c_str();
-        while (to_write > 0)
-        {
-            int written = send(this->socketState, message_ + (len - to_write), to_write, 0);
-            if (written < 0)
-            {
-                ESP_LOGE("TCP MESSAGE", "Error occurred during sending: errno %d", errno);
-                // Failed to retransmit, giving up
-                return;
-            }
-            to_write -= written;
-        }
-        delete message_;
-    }
-    else
+    if (this->socketState < 0)
     {
         ESP_LOGW(tag.c_str(), "%s", "Socket is not connected");
+        return;
+    }
+    // send() can return less bytes than supplied length.
+    // Walk-around for robust implementation.
+    int to_write = message.length();
+    int len = to_write;
+    if (len > TCP_TX_BUFFER_SIZE)
+    {
+        ESP_LOGE(tag.c_str(), "Message too long to send: %d bytes", len);
+        return;
+    }
+    if (len <= 0)
+    {
+        ESP_LOGE(tag.c_str(), "Nothing to send");
+        return;
+    }
+
+    const char *message_ = message.c_str();
+    while (to_write > 0)
+    {
+        int written = send(this->socketState, message_ + (len - to_write), to_write, 0);
+        if (written < 0)
+        {
+            ESP_LOGE("TCP MESSAGE", "Error occurred during sending: errno %d", errno);
+            // Failed to retransmit, giving up
+            return;
+        }
+        to_write -= written;
     }
 }
 
@@ -46,6 +43,8 @@ void TcpServer::serverTask(function<string(char *dataToSend)> callbackFunction)
 
     do
     {
+        memset(rxTcpBuffer, 0, sizeof(rxTcpBuffer));
+        ESP_LOGE("this->socketState :", "%d", this->socketState);
         len = read(this->socketState, rxTcpBuffer, sizeof(rxTcpBuffer) - 1);
 
         if (len < 0)
@@ -55,11 +54,13 @@ void TcpServer::serverTask(function<string(char *dataToSend)> callbackFunction)
         else if (len == 0)
         {
             ESP_LOGW("TCP retransmit", "Connection closed");
+            this->cleanUpServer(this->socketState);
+            break;
         }
         else
         {
             rxTcpBuffer[len] = 0; // Null-terminate whatever is received and treat it like a string
-            char data[sizeof(rxTcpBuffer) * sizeof(char)];
+            char data[sizeof(rxTcpBuffer)];
             memset(data, 0, sizeof(data));
 
             uint k = 0;
@@ -67,7 +68,7 @@ void TcpServer::serverTask(function<string(char *dataToSend)> callbackFunction)
             {
                 k += sprintf(data + k, "%02X ", rxTcpBuffer[i]);
             }
-            
+
             ESP_LOGI("TCP retransmit", "Received %d bytes: %s", len, (const char *)data);
 
             if (isValidFrame(rxTcpBuffer, len))
@@ -76,6 +77,7 @@ void TcpServer::serverTask(function<string(char *dataToSend)> callbackFunction)
                 if (!data.empty())
                     ESP_LOGW("DATA", "%s", data.c_str());
             }
+            this->socketState = -1;
         }
     } while (len > 0);
 }
@@ -156,19 +158,18 @@ void TcpServer::serverLaunch(void *pvParameters)
         ESP_LOGW("TCP SERVER", "Socket accepted ip address: %s", addr_str);
 
         serverTask(instance->callback);
-        shutdown(this->socketState, 0);
-        close(this->socketState);
     }
 
     ESP_LOGE("TCP SERVER TASK", "Closing port: %d", instance->port);
     delete instance; // Liberar la memoria asignada dinámicamente
     this->cleanUpServer(listenSocket);
+    vTaskDelete(NULL);
 }
 
 void TcpServer::cleanUpServer(int &listenSocket)
 {
     close(listenSocket);
-    vTaskDelete(NULL);
+    listenSocket = -1;
     ESP_LOGE("TCP SERVER TASK", "Socket closed");
 }
 
