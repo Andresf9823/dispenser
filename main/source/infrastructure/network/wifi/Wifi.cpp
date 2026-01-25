@@ -9,7 +9,7 @@ WifiService::WifiService()
 void WifiService::createIpServer(IpServerConfiguration &serverConfig)
 {
 
-     std::unique_ptr<IpServerRepository> ipServerRepo;
+    std::unique_ptr<IpServerRepository> ipServerRepo;
     switch (serverConfig.type)
     {
     case IpServerType::TCP:

@@ -41,45 +41,41 @@ void TcpServer::serverTask(function<string(char *dataToSend)> callbackFunction)
     int len;
     char rxTcpBuffer[TCP_RX_BUFFER_SIZE];
 
-    do
+    while (true)
     {
         memset(rxTcpBuffer, 0, sizeof(rxTcpBuffer));
         ESP_LOGE("this->socketState :", "%d", this->socketState);
-        len = read(this->socketState, rxTcpBuffer, sizeof(rxTcpBuffer) - 1);
+        len = recv(this->socketState, rxTcpBuffer, sizeof(rxTcpBuffer) - 1, 0);
 
         if (len < 0)
         {
             ESP_LOGE("TCP retransmit", "Error occurred during receiving T_T : errno %d", errno);
         }
-        else if (len == 0)
+        if (len == 0)
         {
             ESP_LOGW("TCP retransmit", "Connection closed");
             this->cleanUpServer(this->socketState);
             break;
         }
-        else
+        rxTcpBuffer[len] = 0; // Null-terminate whatever is received and treat it like a string
+        char data[sizeof(rxTcpBuffer)];
+        memset(data, 0, sizeof(data));
+
+        uint k = 0;
+        for (uint i = 0; i < len; i++)
         {
-            rxTcpBuffer[len] = 0; // Null-terminate whatever is received and treat it like a string
-            char data[sizeof(rxTcpBuffer)];
-            memset(data, 0, sizeof(data));
-
-            uint k = 0;
-            for (uint i = 0; i < len; i++)
-            {
-                k += sprintf(data + k, "%02X ", rxTcpBuffer[i]);
-            }
-
-            ESP_LOGI("TCP retransmit", "Received %d bytes: %s", len, (const char *)data);
-
-            if (isValidFrame(rxTcpBuffer, len))
-            {
-                string data = callbackFunction(rxTcpBuffer);
-                if (!data.empty())
-                    ESP_LOGW("DATA", "%s", data.c_str());
-            }
-            this->socketState = -1;
+            k += sprintf(data + k, "%02X ", rxTcpBuffer[i]);
         }
-    } while (len > 0);
+
+        ESP_LOGI("TCP retransmit", "Received %d bytes: %s", len, (const char *)data);
+
+        if (isValidFrame(rxTcpBuffer, len))
+        {
+            string data = callbackFunction(rxTcpBuffer);
+            if (!data.empty())
+                ESP_LOGW("DATA", "%s", data.c_str());
+        }
+    }
 }
 
 void TcpServer::serverLaunch(void *pvParameters)
