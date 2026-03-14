@@ -1,5 +1,11 @@
 #include "TcpServer.hpp"
 
+/**
+ * Sends a message through the connected TCP socket.
+ * If the socket is not connected, logs a warning and exits.
+ * Handles sending in fragments if the message is long.
+ * @param message The message string to send.
+ */
 void TcpServer::sendMessage(string &message)
 {
     if (this->socketState < 0)
@@ -36,6 +42,12 @@ void TcpServer::sendMessage(string &message)
     }
 }
 
+/**
+ * Main task for receiving data from the TCP client.
+ * Continuously listens for data on the socket, validates frames, and calls a callback if valid.
+ * Handles connection errors and closes the socket if necessary.
+ * @param callbackFunction Callback function that processes received data and returns a response.
+ */
 void TcpServer::serverTask(function<string(char *dataToSend)> callbackFunction)
 {
     int len;
@@ -43,7 +55,8 @@ void TcpServer::serverTask(function<string(char *dataToSend)> callbackFunction)
 
     do
     {
-        if (this->socketState < 0) {
+        if (this->socketState < 0)
+        {
             ESP_LOGW("TCP retransmit", "Socket invalid (socketState=%d), stopping receive loop", this->socketState);
             break;
         }
@@ -99,8 +112,14 @@ void TcpServer::serverTask(function<string(char *dataToSend)> callbackFunction)
     } while (len > 0);
 }
 
-void TcpServer::serverLaunch(IpServerConfiguration *instance)
+/**
+ * Starts the TCP server: creates the socket, configures it, listens for connections, and accepts clients.
+ * For each accepted client, configures keepalive and launches the receive task.
+ * @param pvParameters Pointer to the server configuration (IpServerConfiguration).
+ */
+void TcpServer::serverLaunch(void *pvParameters)
 {
+    IpServerConfiguration *instance = static_cast<IpServerConfiguration *>(pvParameters);
     int opt = 1;
     ESP_LOGW("TCP SERVICE", "%i", instance->port);
     bool listening = true;
@@ -152,9 +171,9 @@ void TcpServer::serverLaunch(IpServerConfiguration *instance)
 
         // Set tcp keepalive option (similar to ESP-IDF example)
         int keepAlive = 1;
-        int keepIdle = 10; // seconds
+        int keepIdle = 10;    // seconds
         int keepInterval = 5; // seconds
-        int keepCount = 3; // count
+        int keepCount = 3;    // count
         setsockopt(this->socketState, SOL_SOCKET, SO_KEEPALIVE, &keepAlive, sizeof(int));
         setsockopt(this->socketState, IPPROTO_TCP, TCP_KEEPIDLE, &keepIdle, sizeof(int));
         setsockopt(this->socketState, IPPROTO_TCP, TCP_KEEPINTVL, &keepInterval, sizeof(int));
@@ -185,6 +204,11 @@ void TcpServer::serverLaunch(IpServerConfiguration *instance)
     this->cleanUpServer(listenSocket);
 }
 
+/**
+ * Closes the specified socket and marks it as invalid.
+ * Logs a message indicating the socket was closed.
+ * @param listenSocket Reference to the socket descriptor to close.
+ */
 void TcpServer::cleanUpServer(int &listenSocket)
 {
     close(listenSocket);
@@ -192,6 +216,13 @@ void TcpServer::cleanUpServer(int &listenSocket)
     ESP_LOGE("TCP SERVER TASK", "Socket closed");
 }
 
+/**
+ * Validates if the received buffer is a valid frame (starts with '{' and ends with '}').
+ * If valid, null-terminates it and logs the frame.
+ * @param buffer The received data buffer.
+ * @param len The buffer length.
+ * @return true if the frame is valid, false otherwise.
+ */
 bool TcpServer::isValidFrame(char *buffer, uint len)
 {
     if (buffer[0] == '{')
@@ -210,23 +241,22 @@ bool TcpServer::isValidFrame(char *buffer, uint len)
     return false;
 }
 
-struct TcpServerTaskArgs
-{
-    TcpServer *server;
-    IpServerConfiguration *config;
-};
-
+/**
+ * Creates and launches a FreeRTOS task for the TCP server.
+ * Copies the configuration to the heap to make it safe during the task's lifetime.
+ * @param config The server configuration (port, callback, etc.).
+ */
 void TcpServer::createServer(IpServerConfiguration &config)
 {
-    // Copy config to heap so it's valid for the lifetime of the task.
+    // Copia la config al heap para que sea válida durante la tarea
     IpServerConfiguration *configCopy = new IpServerConfiguration(config);
 
-    // Package task arguments (server instance + config pointer)
-    TcpServerTaskArgs *args = new TcpServerTaskArgs{this, configCopy};
+    // Crea una estructura con el server y la config copiada
+    TcpServer::TcpServerTaskArgs *args = new TcpServer::TcpServerTaskArgs{this, configCopy};
 
     xTaskCreate([](void *pvParameters)
                 {
-                    auto *args = static_cast<TcpServerTaskArgs *>(pvParameters);
+                    auto *args = static_cast<TcpServer::TcpServerTaskArgs *>(pvParameters);
                     args->server->serverLaunch(args->config);
                     delete args->config;
                     delete args;

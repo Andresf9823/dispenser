@@ -22,11 +22,17 @@ private:
     static constexpr const string tag = "TCP SERVER";
     static bool isValidFrame(char *frame, uint len);
     void sendMessage(string &message);
-    void serverLaunch(IpServerConfiguration *config);
+    void serverLaunch(void *pvParameters);
     void serverTask(function<string(char *dataToSend)> callbackFunction);
     void cleanUpServer(int &listenSocket);
     int socketState = -1;
     IpServerConfiguration serverConfig;
+
+    struct TcpServerTaskArgs
+    {
+        TcpServer *server;
+        IpServerConfiguration *config;
+    };
 
 public:
     TcpServer() = default;
