@@ -22,7 +22,7 @@ private:
     static constexpr const string tag = "TCP SERVER";
     static bool isValidFrame(char *frame, uint len);
     void sendMessage(string &message);
-    void serverLaunch(void *pvParameters);
+    void serverLaunch(IpServerConfiguration *config);
     void serverTask(function<string(char *dataToSend)> callbackFunction);
     void cleanUpServer(int &listenSocket);
     int socketState = -1;

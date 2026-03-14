@@ -8,7 +8,6 @@ WifiService::WifiService()
 
 void WifiService::createIpServer(IpServerConfiguration &serverConfig)
 {
-
     std::unique_ptr<IpServerRepository> ipServerRepo;
     switch (serverConfig.type)
     {
@@ -19,7 +18,14 @@ void WifiService::createIpServer(IpServerConfiguration &serverConfig)
     default:
         break;
     }
-    ipServerRepo->createServer(serverConfig);
+
+    if (ipServerRepo)
+    {
+        // Keep the repository alive for the life of the WifiService.
+        // This prevents the server task from using a dangling "this" pointer.
+        ipServerRepo->createServer(serverConfig);
+        serverRepositories.push_back(std::move(ipServerRepo));
+    }
 }
 
 void WifiService::createIpClient(IpClientConfiguration &clientConfig)

@@ -41,15 +41,36 @@ void TcpServer::serverTask(function<string(char *dataToSend)> callbackFunction)
     int len;
     char rxTcpBuffer[TCP_RX_BUFFER_SIZE];
 
-    while (true)
+    do
     {
+        if (this->socketState < 0) {
+            ESP_LOGW("TCP retransmit", "Socket invalid (socketState=%d), stopping receive loop", this->socketState);
+            break;
+        }
+
         memset(rxTcpBuffer, 0, sizeof(rxTcpBuffer));
-        ESP_LOGE("this->socketState :", "%d", this->socketState);
+        ESP_LOGD("TCP retransmit", "Waiting to recv on socket %d", this->socketState);
         len = recv(this->socketState, rxTcpBuffer, sizeof(rxTcpBuffer) - 1, 0);
 
         if (len < 0)
         {
-            ESP_LOGE("TCP retransmit", "Error occurred during receiving T_T : errno %d", errno);
+            // Map common recoverable / connection-close errors to non-fatal flows.
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK)
+            {
+                ESP_LOGD("TCP retransmit", "recv() would block or was interrupted (errno %d: %s), retrying", errno, strerror(errno));
+                continue; // Retry receiving
+            }
+
+            if (errno == ECONNRESET || errno == ENOTCONN || errno == EPIPE)
+            {
+                ESP_LOGW("TCP retransmit", "Connection closed by peer (errno %d: %s)", errno, strerror(errno));
+                this->cleanUpServer(this->socketState);
+                break;
+            }
+
+            // All other errors are unexpected.
+            ESP_LOGE("TCP retransmit", "Error occurred during receiving: errno %d (%s)", errno, strerror(errno));
+            break;
         }
         if (len == 0)
         {
@@ -75,13 +96,12 @@ void TcpServer::serverTask(function<string(char *dataToSend)> callbackFunction)
             if (!data.empty())
                 ESP_LOGW("DATA", "%s", data.c_str());
         }
-    }
+    } while (len > 0);
 }
 
-void TcpServer::serverLaunch(void *pvParameters)
+void TcpServer::serverLaunch(IpServerConfiguration *instance)
 {
     int opt = 1;
-    IpServerConfiguration *instance = new IpServerConfiguration(*static_cast<IpServerConfiguration *>(pvParameters));
     ESP_LOGW("TCP SERVICE", "%i", instance->port);
     bool listening = true;
     struct sockaddr_in destinationAddress;
@@ -130,11 +150,15 @@ void TcpServer::serverLaunch(void *pvParameters)
             break;
         }
 
-        // Set tcp keepalive option
-        // setsockopt(sock, SOL_SOCKET, SO_KEEPALIVE, &keepAlive, sizeof(int));
-        // setsockopt(sock, IPPROTO_TCP, TCP_KEEPIDLE, &keepIdle, sizeof(int));
-        // setsockopt(sock, IPPROTO_TCP, TCP_KEEPINTVL, &keepInterval, sizeof(int));
-        // setsockopt(sock, IPPROTO_TCP, TCP_KEEPCNT, &keepCount, sizeof(int));
+        // Set tcp keepalive option (similar to ESP-IDF example)
+        int keepAlive = 1;
+        int keepIdle = 10; // seconds
+        int keepInterval = 5; // seconds
+        int keepCount = 3; // count
+        setsockopt(this->socketState, SOL_SOCKET, SO_KEEPALIVE, &keepAlive, sizeof(int));
+        setsockopt(this->socketState, IPPROTO_TCP, TCP_KEEPIDLE, &keepIdle, sizeof(int));
+        setsockopt(this->socketState, IPPROTO_TCP, TCP_KEEPINTVL, &keepInterval, sizeof(int));
+        setsockopt(this->socketState, IPPROTO_TCP, TCP_KEEPCNT, &keepCount, sizeof(int));
 
         // Convert ip address to string
 
@@ -159,7 +183,6 @@ void TcpServer::serverLaunch(void *pvParameters)
     ESP_LOGE("TCP SERVER TASK", "Closing port: %d", instance->port);
     delete instance; // Liberar la memoria asignada dinámicamente
     this->cleanUpServer(listenSocket);
-    vTaskDelete(NULL);
 }
 
 void TcpServer::cleanUpServer(int &listenSocket)
@@ -187,10 +210,27 @@ bool TcpServer::isValidFrame(char *buffer, uint len)
     return false;
 }
 
+struct TcpServerTaskArgs
+{
+    TcpServer *server;
+    IpServerConfiguration *config;
+};
+
 void TcpServer::createServer(IpServerConfiguration &config)
 {
-    xTaskCreatePinnedToCore([](void *pvParameters)
-                            {
-        TcpServer *tcpServer = static_cast<TcpServer *>(pvParameters);
-        tcpServer->serverLaunch(pvParameters); }, "TCP SERVER", TCP_TASK_SIZE, &config, 5, NULL, 0);
+    // Copy config to heap so it's valid for the lifetime of the task.
+    IpServerConfiguration *configCopy = new IpServerConfiguration(config);
+
+    // Package task arguments (server instance + config pointer)
+    TcpServerTaskArgs *args = new TcpServerTaskArgs{this, configCopy};
+
+    xTaskCreate([](void *pvParameters)
+                {
+                    auto *args = static_cast<TcpServerTaskArgs *>(pvParameters);
+                    args->server->serverLaunch(args->config);
+                    delete args->config;
+                    delete args;
+                    vTaskDelete(NULL);
+                },
+                "TCP SERVER", TCP_TASK_SIZE, args, 5, NULL);
 }
