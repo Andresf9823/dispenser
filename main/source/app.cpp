@@ -23,8 +23,8 @@ App::App()
         // Configurar y crear servidor TCP
 
         WifiConfig wifiConfig = localStorage->loadWifiConfig();
-        unique_ptr<WifiService> wifiService = make_unique<WifiService>();
-        if (wifiService->init(wifiConfig))
+        this->wifiService = make_unique<WifiService>();
+        if (this->wifiService->init(wifiConfig))
         {
             ESP_LOGW(this->tag.c_str(), "%s", ">>>>>>>>>>>>> WIFI INITIALIZED <<<<<<<<<<<<<<");
 
@@ -32,7 +32,7 @@ App::App()
             tcpServerConfig.port = 8080;
             tcpServerConfig.type = IpServerType::TCP;
             tcpServerConfig.callback = helloWorldCallback;
-            wifiService->createIpServer(tcpServerConfig);
+            this->wifiService->createIpServer(tcpServerConfig);
 
             // unique_ptr<IpClientConfiguration> tcpClientConfig = make_unique<IpClientConfiguration>();
             // tcpClientConfig->port = 1100;
